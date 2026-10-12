@@ -1,0 +1,19 @@
+/* Icônes dessinées à la main (SVG), une par famille de produits */
+export const ICONS = {
+  miel: '<svg viewBox="0 0 64 64"><path d="M22 18h20M24 18v-4h16v4"/><path d="M20 22c0-2 2-4 4-4h16c2 0 4 2 4 4v28c0 4-3 7-7 7H27c-4 0-7-3-7-7z"/><path d="M20 30h24"/><path d="M32 36c-3 5-3 8 0 10 3-2 3-5 0-10z"/></svg>',
+  huile: '<svg viewBox="0 0 64 64"><path d="M28 6h8v8h-8z"/><path d="M27 14h10v6l6 6v28a4 4 0 0 1-4 4H25a4 4 0 0 1-4-4V26l6-6z"/><path d="M21 34h22"/><path d="M32 40c-3 4-3 7 0 9 3-2 3-5 0-9z"/></svg>',
+  bougie: '<svg viewBox="0 0 64 64"><path d="M16 30h32v20a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6z"/><path d="M16 30c0-3 7-5 16-5s16 2 16 5-7 5-16 5-16-2-16-5z"/><path d="M32 25v-6"/><path d="M32 8c-4 5-4 9 0 11 4-2 4-6 0-11z"/></svg>',
+  gel: '<svg viewBox="0 0 64 64"><path d="M26 4h12v8H26z"/><path d="M24 12h16l4 40H20z"/><path d="M18 52h28v6H18z"/><path d="M23 26h18"/></svg>',
+  soin: '<svg viewBox="0 0 64 64"><path d="M24 8h16v10H24z"/><path d="M22 18h20c2 0 4 2 4 4v30a6 6 0 0 1-6 6H24a6 6 0 0 1-6-6V22c0-2 2-4 4-4z"/><path d="M32 30c-4 2-6 6-4 10 1 2 3 2 4 1 1 1 3 1 4-1 2-4 0-8-4-10z"/></svg>',
+  pack: '<svg viewBox="0 0 64 64"><rect x="10" y="24" width="44" height="32" rx="3"/><path d="M10 34h44M32 24v32"/><path d="M32 24c-4-8-14-10-14-3 0 4 8 3 14 3zM32 24c4-8 14-10 14-3 0 4-8 3-14 3z"/></svg>',
+  hex: '<svg viewBox="0 0 64 64"><path d="M32 6l22 12.7v26.6L32 58 10 45.3V18.7z"/><path d="M32 18l11 6.4v12.7L32 43.5l-11-6.4V24.4z" opacity=".6"/><path d="M32 26c-3 5-3 8 0 10 3-2 3-5 0-10z"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 12h15M13 6l6 6-6 6"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9.5"/><path d="M2.5 12h19M12 2.5c2.8 3 4 6 4 9.5s-1.2 6.5-4 9.5c-2.8-3-4-6-4-9.5s1.2-6.5 4-9.5z"/></svg>',
+  bag: '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+  box: '<svg viewBox="0 0 32 32"><path d="M4 10l12-6 12 6v12l-12 6-12-6z"/><path d="M4 10l12 6 12-6M16 16v12"/></svg>',
+  clock: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M16 9v7l5 3"/></svg>',
+  chat: '<svg viewBox="0 0 32 32"><path d="M5 7h22v15H13l-6 5v-5H5z"/></svg>',
+  globe32: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M4 16h24M16 4c3.5 3.5 5 7.5 5 12s-1.5 8.5-5 12c-3.5-3.5-5-7.5-5-12s1.5-8.5 5-12z"/></svg>',
+  whatsapp: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5a9.5 9.5 0 0 0-8.2 14.3L2.6 21.4l4.7-1.2A9.5 9.5 0 1 0 12 2.5zm5 13.2c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.4-1-2.6s.6-1.9.9-2.2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.3 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1 1 2 1.3 2.3 1.4.3.1.4.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.7-.1 1.2z"/></svg>',
+  snapchat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.2c3 0 5 2.2 5 5.2v2.4l1.6-.5c.6-.2 1 .6.5 1l-1.9 1.2c.6 1.6 1.8 2.8 3.4 3.3-.3.8-1.6 1.1-2.6 1.2l-.4 1.3c-1.3-.2-2.5 0-3.6.9-.7.5-1.3.6-2 .6s-1.3-.1-2-.6c-1.1-.9-2.3-1.1-3.6-.9L6 17c-1-.1-2.3-.4-2.6-1.2 1.6-.5 2.8-1.7 3.4-3.3l-1.9-1.2c-.5-.4-.1-1.2.5-1l1.6.5V8.4c0-3 2-5.2 5-5.2z"/></svg>',
+};

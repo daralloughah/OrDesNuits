@@ -1,0 +1,29 @@
+{
+  "_note": "Catalogue de démonstration. Prix en euros. Sera remplacé par la base Supabase et géré depuis l'espace gérant.",
+  "categories": {
+    "lui": ["miel", "huile", "bougie", "gel"],
+    "elle": ["miel", "huile", "bougie", "soin"]
+  },
+  "products": [
+    { "id": "nuit-ambre", "shop": "lui", "category": "miel", "name": "Nuit d'Ambre", "price": 4.5, "promo": 3.9, "frame": "promo", "offer": true, "pinned": true, "sold": 184, "stock": 120, "img": null,
+      "desc": { "fr": "Un miel sombre aux reflets ambrés, en sachet de 10 g à glisser partout.", "en": "A dark, amber-toned honey in a 10 g sachet you can take anywhere." } },
+    { "id": "or-noir", "shop": "lui", "category": "miel", "name": "Or Noir", "price": 4.5, "frame": "none", "offer": true, "sold": 142, "stock": 90, "img": null,
+      "desc": { "fr": "Notes boisées et caramel brûlé. Sachet de 10 g.", "en": "Woody notes and burnt caramel. 10 g sachet." } },
+    { "id": "cedre-ambre", "shop": "lui", "category": "huile", "name": "Cèdre & Ambre", "price": 19.9, "frame": "new", "offer": false, "sold": 61, "stock": 40, "img": null,
+      "desc": { "fr": "Huile de massage au parfum de cèdre et d'ambre. 100 ml.", "en": "Massage oil scented with cedar and amber. 100 ml." } },
+    { "id": "tabac-blond", "shop": "lui", "category": "bougie", "name": "Tabac Blond", "price": 24.9, "frame": "none", "offer": false, "sold": 44, "stock": 30, "img": null,
+      "desc": { "fr": "Bougie de massage : sa cire fondue devient une huile tiède.", "en": "Massage candle: its melted wax turns into a warm oil." } },
+    { "id": "tempo", "shop": "lui", "category": "gel", "name": "Tempo", "price": 14.9, "frame": "none", "offer": false, "sold": 58, "stock": 7, "img": null,
+      "desc": { "fr": "Gel retardant. 15 ml.", "en": "Delay gel. 15 ml." } },
+    { "id": "tempo-intense", "shop": "lui", "category": "gel", "name": "Tempo Intense", "price": 17.9, "frame": "none", "offer": false, "sold": 23, "stock": 25, "img": null },
+
+    { "id": "rose-minuit", "shop": "elle", "category": "miel", "name": "Rose de Minuit", "price": 4.5, "frame": "fav", "offer": true, "pinned": true, "sold": 167, "stock": 110, "img": null,
+      "desc": { "fr": "Un miel clair aux notes de rose. Sachet de 10 g.", "en": "A light honey with notes of rose. 10 g sachet." } },
+    { "id": "fleur-oranger", "shop": "elle", "category": "miel", "name": "Fleur d'Oranger", "price": 4.5, "frame": "none", "offer": true, "sold": 96, "stock": 80, "img": null },
+    { "id": "satin", "shop": "elle", "category": "huile", "name": "Satin", "price": 21.9, "frame": "none", "offer": false, "sold": 52, "stock": 35, "img": null,
+      "desc": { "fr": "Huile sèche pour le corps, fini satiné. 100 ml.", "en": "Dry body oil with a satin finish. 100 ml." } },
+    { "id": "pivoine-vanille", "shop": "elle", "category": "bougie", "name": "Pivoine & Vanille", "price": 24.9, "frame": "new", "offer": false, "sold": 37, "stock": 30, "img": null },
+    { "id": "soie", "shop": "elle", "category": "soin", "name": "Soie", "price": 12.9, "frame": "none", "offer": false, "sold": 57, "stock": 50, "img": null,
+      "desc": { "fr": "Gel intime à base d'eau. 100 ml.", "en": "Water-based intimate gel. 100 ml." } }
+  ]
+}

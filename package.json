@@ -1,0 +1,21 @@
+{
+  "name": "ordesnuits",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Boutique OrDesNuits — site statique multilingue",
+  "type": "module",
+  "scripts": {
+    "fonts": "node scripts/fonts.mjs",
+    "css": "tailwindcss -i src/app.css -o css/app.css --minify",
+    "build": "npm run fonts && npm run css",
+    "dev": "tailwindcss -i src/app.css -o css/app.css --watch",
+    "serve": "npx serve -l 3000 ."
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0",
+    "@fontsource-variable/bodoni-moda": "^5.1.0",
+    "@fontsource-variable/jost": "^5.1.0",
+    "@fontsource-variable/noto-naskh-arabic": "^5.1.0"
+  }
+}

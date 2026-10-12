@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OrDesNuits</title>
+  <meta name="description" content="OrDesNuits — miels rares et plaisirs de la nuit. Livraison discrète.">
+  <meta name="theme-color" content="#0b0809">
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+  <link rel="preload" href="assets/fonts/bodoni-moda-latin-italic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/pages/accueil.js"></script>
+</head>
+<body>
+  <main class="welcome">
+    <div class="frame" aria-hidden="true"></div>
+    <div class="flex w-full max-w-[860px] flex-col items-center gap-7 text-center">
+      <div class="seal reveal"><img src="assets/img/logo.webp" alt="OrDesNuits" width="168" height="168"></div>
+      <div class="greet reveal d1" id="greet" aria-hidden="true"><span class="on">Bienvenue</span></div>
+      <svg class="ornament w-52 text-gold reveal d2" viewBox="0 0 220 24" aria-hidden="true"><path d="M0 12h86M134 12h86" stroke="currentColor" stroke-width=".8" opacity=".7"/><path d="M92 12l4-4 4 4-4 4zM120 12l4-4 4 4-4 4z" fill="currentColor" opacity=".7"/><path d="M110 3l7.8 4.5v9L110 21l-7.8-4.5v-9z" fill="none" stroke="currentColor" stroke-width="1"/><path d="M110 8.5c-2 3-2 5 0 6.3 2-1.3 2-3.3 0-6.3z" fill="currentColor"/></svg>
+      <p class="eyebrow m-0 reveal d2" data-i="w_choose">Choisissez votre langue</p>
+      <div class="langs-grid reveal d3" id="langs"></div>
+      <button class="btn btn-gold reveal d4" type="button" id="continue">Continuer</button>
+      <p class="m-0 max-w-md text-xs text-faint reveal d4" data-i="w_age">En entrant, vous confirmez avoir 18 ans ou plus.</p>
+    </div>
+  </main>
+</body>
+</html>
