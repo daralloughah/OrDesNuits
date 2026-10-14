@@ -31,3 +31,16 @@ export const RATES = { EUR: 1, USD: 1.10, GBP: 0.86, AED: 4.04, BRL: 6.10, RUB: 
 
 /* Où trouver le catalogue (aujourd'hui un fichier, demain Supabase) */
 export const DATA_URL = "data/catalogue.json";
+
+/* =========================================================
+   SUPABASE — colle ici l'URL du projet et la clé publique
+   (Project Settings → API : "Project URL" et "anon / publishable key").
+   Ces deux valeurs sont PUBLIQUES par conception : la sécurité
+   est assurée par les règles RLS de la base.
+   ⚠️ Ne mets JAMAIS ici la clé "service_role" / "secret".
+   Laisse vide pour rester en mode aperçu (données sur l'appareil).
+   ========================================================= */
+export const SUPABASE = {
+  url: "https://vmhqkdsoasfnicxnhtnk.supabase.co",
+  anonKey: "sb_publishable_AC3GvOcrNyKvv6_X6uS5eA_wxlcon9i",
+};

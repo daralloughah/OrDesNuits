@@ -2,7 +2,8 @@
 import { initI18n, t, translateDom, currentLang } from "../core/i18n.js";
 import { findProduct, productsOf, bestOf } from "../core/catalogue.js";
 import { mountChrome, addToCart, esc } from "../ui/chrome.js";
-import { card, media, priceHtml, ribbon, ORN, ornament, enableTilt } from "../ui/card.js";
+import { card, media, priceHtml, ribbon, ORN, ornament, enableTilt, stockNote } from "../ui/card.js";
+import { isSoldOut } from "../core/catalogue.js";
 import { OFFER } from "../config.js";
 
 let qty = 1;
@@ -44,11 +45,12 @@ async function render() {
         <h1 class="display m-0 text-[clamp(2.4rem,5vw,3.8rem)] italic leading-[1.02]">${esc(p.name)}</h1>
         ${ornament("w-44 self-start text-[var(--accent)]")}
         <span class="price text-3xl">${priceHtml(p)}</span>
+        ${stockNote(p)}
         <p class="m-0 max-w-[52ch] whitespace-pre-line text-muted">${esc(desc)}</p>
         ${p.offer && OFFER.active ? `<div class="note">✦ <span data-i="offer_note"></span></div>` : ""}
         <div class="flex flex-wrap items-center gap-3">
           <div class="stepper"><button type="button" data-step="-1" aria-label="−">−</button><output id="qty">1</output><button type="button" data-step="1" aria-label="+">+</button></div>
-          <button class="btn btn-gold" type="button" data-buy="${esc(p.id)}" data-i="add"></button>
+          ${isSoldOut(p) ? `<span class="btn btn-ghost pointer-events-none opacity-70" data-i="sold_out"></span>` : `<button class="btn btn-gold" type="button" data-buy="${esc(p.id)}" data-i="add"></button>`}
         </div>
         <div class="grid grid-cols-3 gap-3 border-t border-[var(--line-soft)] pt-5 text-sm text-muted">
           <div class="flex flex-col gap-1"><span data-i="ship"></span><b class="font-normal text-ivory" data-i="ship_v"></b></div>

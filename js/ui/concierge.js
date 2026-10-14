@@ -1,13 +1,15 @@
 /* =========================================================
    Le Concierge : assistant de la boutique.
-   Aujourd'hui : réponses préparées (questions fréquentes, 11 langues)
-   + transfert vers WhatsApp pour tout le reste.
-   Demain : on branchera une vraie IA via une fonction Supabase,
-   sans changer cette interface.
+   - Questions fréquentes : réponses préparées (11 langues), instantanées.
+   - Question libre : EN LIGNE, réponse de l'IA (fonction Supabase
+     « concierge ») ; en mode aperçu ou en cas de souci, transfert WhatsApp.
    ========================================================= */
 import { CONTACT } from "../config.js";
-import { t } from "../core/i18n.js";
+import { t, currentLang } from "../core/i18n.js";
 import { esc } from "../core/util.js";
+import { enabled, fn } from "../core/sb.js";
+
+const history = []; // la conversation envoyée à l'IA (les 12 derniers messages)
 
 const TOPICS = ["ship", "discreet", "offer", "order", "pay"];
 let panel, log, opened = false;
@@ -43,9 +45,33 @@ function ask(topic) {
   typing(() => bubble(`${esc(t("a_" + topic))}${chips()}`));
 }
 
-function free(text) {
+const toWhatsapp = (text) => bubble(`${esc(t("chat_fallback"))}<a class="btn btn-gold mt-3 w-full" href="${waLink(text)}" target="_blank" rel="noopener">${esc(t("chat_send_wa"))}</a>${chips()}`);
+
+/* Texte de l'IA → paragraphes propres (aucun HTML venant du serveur n'est injecté tel quel) */
+const paras = (text) => String(text).trim().split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</p>`).join("");
+
+let busy = false;
+async function free(text) {
   bubble(esc(text), "me");
-  typing(() => bubble(`${esc(t("chat_fallback"))}<a class="btn btn-gold mt-3 w-full" href="${waLink(text)}" target="_blank" rel="noopener">${esc(t("chat_send_wa"))}</a>${chips()}`));
+  if (!enabled || busy) { typing(() => toWhatsapp(text)); return; }
+  busy = true;
+  history.push({ role: "user", content: text.slice(0, 600) });
+  const dots = document.createElement("div");
+  dots.className = "msg bot typing";
+  dots.innerHTML = `<div class="b"><i></i><i></i><i></i></div>`;
+  log.append(dots);
+  log.scrollTop = log.scrollHeight;
+  try {
+    const res = await fn("concierge", { messages: history.slice(-12), lang: currentLang() });
+    if (!res?.reply) throw new Error("empty");
+    history.push({ role: "assistant", content: res.reply });
+    dots.remove();
+    bubble(paras(res.reply) + (res.handoff ? `<a class="btn btn-gold mt-3 w-full" href="${waLink(text)}" target="_blank" rel="noopener">${esc(t("chat_send_wa"))}</a>` : ""));
+  } catch {
+    history.pop();
+    dots.remove();
+    toWhatsapp(text);
+  } finally { busy = false; }
 }
 
 function build() {
@@ -89,6 +115,7 @@ export function toggle(force) {
 
 /* Si la langue change, on repart d'une conversation neuve */
 export function resetConcierge() {
+  history.length = 0;
   panel?.remove();
   panel = null;
   if (opened) toggle(true);

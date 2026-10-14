@@ -34,3 +34,10 @@ export async function langFromIp(timeout = 1200) {
     return null;
   }
 }
+
+/* Pays du visiteur (code ISO), si connu */
+export async function countryFromIp() {
+  try { const c = sessionStorage.getItem("odn.geo"); if (c !== null) return c || null; } catch {}
+  await langFromIp();
+  try { return sessionStorage.getItem("odn.geo") || null; } catch { return null; }
+}

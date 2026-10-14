@@ -3,6 +3,7 @@ import { CONTACT } from "../config.js";
 import { initI18n, t, translateDom } from "../core/i18n.js";
 import { mountChrome, softImages } from "../ui/chrome.js";
 import { esc } from "../core/util.js";
+import { subscribe, isEmail } from "../core/backend.js";
 import { promises, ornament } from "../ui/card.js";
 import { ICONS } from "../ui/icons.js";
 
@@ -40,7 +41,11 @@ function render() {
           <span class="door off"><span data-i="him"></span><small data-i="soon_short"></small></span>
           <span class="door off"><span data-i="her"></span><small data-i="soon_short"></small></span>
         </div>
-        <a class="btn btn-rose self-start" href="https://www.snapchat.com/add/${esc(CONTACT.snapchat)}" target="_blank" rel="noopener">${ICONS.snapchat.replace("<svg", '<svg width="18" height="18"')}<span data-i="sens_follow"></span></a>
+        <form class="sens-form" id="sensForm" novalidate>
+          <input type="email" id="sensEmail" autocomplete="email" data-ph="sens_email_ph" aria-label="E-mail">
+          <button type="submit" class="btn btn-rose" data-i="sens_notify"></button>
+        </form>
+        <a class="sens-snap" href="https://www.snapchat.com/add/${esc(CONTACT.snapchat)}" target="_blank" rel="noopener">${ICONS.snapchat.replace("<svg", '<svg width="16" height="16"')}<span data-i="sens_follow"></span></a>
       </article>
     </div>
   </section>
@@ -54,7 +59,17 @@ function render() {
 
   <section class="wrap py-16">${promises()}</section>`;
   translateDom(document.getElementById("app"));
+  document.querySelectorAll("[data-ph]").forEach((el) => (el.placeholder = t(el.dataset.ph)));
   softImages();
+  document.getElementById("sensForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const input = document.getElementById("sensEmail");
+    if (!isEmail(input.value)) { input.classList.add("bad"); input.focus(); return; }
+    form.querySelector("button")?.setAttribute("disabled", "");
+    if (!(await subscribe(input.value, "ordessens", document.documentElement.lang))) { form.querySelector("button")?.removeAttribute("disabled"); input.classList.add("bad"); input.focus(); return; }
+    form.outerHTML = `<p class="sens-thanks">✦ ${t("sens_thanks")}</p>`;
+  });
 }
 
 await initI18n();

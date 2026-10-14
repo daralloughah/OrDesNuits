@@ -1,7 +1,7 @@
 /* =========================================================
    Effets signature :
    - ordinateur : curseur au monogramme + halo doré qui le suit
-   - partout (souris ou doigt) : éclat doré avec le monogramme
+   - ordinateur : éclat doré avec le monogramme au clic (désactivé sur mobile)
    ========================================================= */
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -52,7 +52,8 @@ export function mountFx() {
   mountFx.done = true;
   if (finePointer) document.documentElement.classList.add("has-cursor");
   if (reduce) return;
-  if (finePointer) halo();
+  if (!finePointer) return; // sur mobile : pas d'éclat au toucher
+  halo();
   addEventListener("pointerdown", (e) => {
     if (e.button) return;
     if (e.target.closest?.("input, textarea, select, .concierge .log")) return;

@@ -4,7 +4,7 @@
    ========================================================= */
 import { t } from "../core/i18n.js";
 import { price } from "../core/money.js";
-import { finalPrice } from "../core/catalogue.js";
+import { finalPrice, isSoldOut, isLow } from "../core/catalogue.js";
 import { OFFER } from "../config.js";
 import { ICONS } from "./icons.js";
 import { esc } from "../core/util.js";
@@ -62,20 +62,28 @@ export function ribbon(p, isBest) {
   return "";
 }
 
+/* « Plus que 3 » quand le stock est bas */
+export function stockNote(p) {
+  return isLow(p) ? `<span class="low-stock"><i></i>${esc(t("stock_low", { n: p.stock }))}</span>` : "";
+}
+
 export function card(p, rank) {
   const href = `produit.html#${encodeURIComponent(p.id)}`;
   return `
-  <article class="card f-${p.frame || "none"} reveal" data-tilt>
+  <article class="card f-${p.frame || "none"} ${isSoldOut(p) ? "is-out" : ""} reveal" data-tilt>
     ${ribbon(p, !!rank)}${rank ? `<span class="rank" aria-hidden="true">${rank}</span>` : ""}
     <a class="cover" href="${href}" aria-label="${esc(p.name)}">${media(p)}</a>
     <div class="info">
       <span class="cat">${esc(t("cat_" + p.category))}${p.offer && OFFER.active ? ` <b class="tag31">3+1</b>` : ""}</span>
       <h3><a href="${href}">${esc(p.name)}</a></h3>
+      ${stockNote(p)}
       <div class="row">
         <span class="price">${priceHtml(p)}</span>
-        <button class="add" type="button" data-add="${esc(p.id)}" aria-label="${esc(t("add"))} · ${esc(p.name)}">
+        ${isSoldOut(p)
+          ? `<span class="soldout">${esc(t("sold_out"))}</span>`
+          : `<button class="add" type="button" data-add="${esc(p.id)}" aria-label="${esc(t("add"))} · ${esc(p.name)}">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>${esc(t("add"))}</span>
-        </button>
+        </button>`}
       </div>
     </div>
   </article>`;

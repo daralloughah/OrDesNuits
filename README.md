@@ -17,7 +17,8 @@ assets/img/        images (logo, visuels, bannières)
 assets/fonts/      polices hébergées chez nous (générées par npm run fonts)
 src/app.css        le design (source Tailwind) : c'est ici qu'on modifie le style
 css/app.css        fichier généré, ne pas modifier à la main
-data/catalogue.json  catalogue de démonstration (remplacé ensuite par Supabase)
+data/catalogue.json  catalogue de démonstration (utilisé tant que Supabase n'est pas branché)
+supabase/          base de données (schema.sql, seed.sql), Concierge IA, guide LISEZMOI.md
 locales/*.json     les textes de chaque langue
 js/config.js       RÉGLAGES : WhatsApp, Snapchat, offre 3+1, langues, devises
 js/core/           le moteur : langue, prix, catalogue, panier
@@ -71,3 +72,34 @@ Plusieurs photos : `"img"` pour la principale et `"gallery": ["…", "…"]` pou
 ## Langue de bienvenue
 
 Ordre de priorité : la langue déjà choisie par le visiteur, puis le pays de son adresse IP (`/api/geo`, uniquement une fois en ligne sur Cloudflare), puis la langue de son téléphone.
+
+## Espace gérant (Salon privé)
+
+Adresse : `admin.html` (non référencée par Google). Au premier passage, choisis ton code à 4 chiffres.
+
+- **Salon** : valeur du stock, ventes de la semaine, produits à réassortir.
+- **Produits** : ajouter, modifier, supprimer ; prix, promo, stock (boutons − / +), encadrement, offre 3+1, visibilité, photos.
+- **Ventes** : colle le message de commande WhatsApp, le stock se décompte tout seul.
+- **Atelier** : studio photo (recadrage, ambiances, texte, logo, badges, cadre art déco).
+- **Réglages** : exporter / importer le catalogue, changer le code.
+
+En attendant Supabase, les modifications sont enregistrées sur l'appareil utilisé. Pour les publier : Réglages → Exporter le catalogue, puis remplacer `data/catalogue.json` sur GitHub par le fichier exporté.
+
+Accès discret depuis le site : touche 5 fois rapidement le grand logo en bas de page.
+
+## Version 1.4 : front-end complet
+
+- `commande.html` : tunnel de commande (coordonnées, pays, région déduite du code postal, consentement aux offres, CGV).
+- `compte.html` : comptes clients (inscription, connexion, mes commandes, offres).
+- `legal.html` : mentions légales, CGV, confidentialité (les passages entre [crochets] sont à compléter).
+- Salon privé : tableau de bord (CA, commandes, panier moyen, fidélité, comptes, e-mails, marge, top pays, régions, produits, moments, pistes stratégiques), commandes avec suivi et décompte du stock, clients et e-mails avec consentement, comptabilité (livre des recettes exportable, URSSAF estimée, seuils).
+
+## Version 1.5 : back end Supabase et Concierge IA
+
+Mode d'emploi pas à pas : **`supabase/LISEZMOI.md`**.
+
+- Comptes clients en ligne (confirmation par e-mail, mot de passe oublié), commandes, liste d'e-mails, produits, stock et photos partagés entre tous les appareils.
+- Prix et offre 3+1 recalculés par le serveur à chaque commande.
+- Salon privé : connexion sécurisée du gérant, mise à jour automatique toutes les 30 secondes, alerte « Nouvelle commande ! », stock décompté par le serveur à la confirmation.
+- Le Concierge répond aux questions libres grâce à Claude (fonction `supabase/functions/concierge`), avec repli WhatsApp.
+- `js/core/backend.js` choisit tout seul : en ligne si `js/config.js` contient l'adresse Supabase, sinon mode aperçu sur l'appareil.

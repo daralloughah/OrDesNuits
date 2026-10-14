@@ -42,7 +42,7 @@ export function langPicker(onChange) {
     <h2 class="display text-center text-3xl italic text-[var(--accent-hi)]">${esc(t("lang_title"))}</h2>
     <div class="langs-grid" style="width:100%">${LANGS.map((l) => `
       <button type="button" class="lang-tile" data-lang="${l.code}" aria-current="${l.code === cur}">
-        <b lang="${l.html}">${l.name}</b><small>${l.region} · ${l.cur}</small>
+        <b lang="${l.html}">${l.name}</b><small>${l.region}</small>
       </button>`).join("")}</div>`);
   root.addEventListener("click", async (e) => {
     const b = e.target.closest("[data-lang]");
@@ -71,8 +71,9 @@ function headerHtml(active) {
         <a href="boutique.html#elle" data-i="her" ${active === "elle" ? 'aria-current="page"' : ""}></a>
       </nav>
       <button class="pill-btn" type="button" id="langBtn" data-ia="lang_title">
-        ${ICONS.globe}<span class="hidden sm:inline">${esc(info.name)}</span><span class="sm:hidden">${info.code.split("-")[0].toUpperCase()}</span><span class="cur">${info.cur}</span>
+        ${ICONS.globe}<span class="hidden sm:inline">${esc(info.name)}</span><span class="sm:hidden">${info.code.split("-")[0].toUpperCase()}</span>
       </button>
+      <a class="icon-btn" href="compte.html" data-ia="account">${ICONS.user}<span class="dot-on" id="accDot" hidden></span></a>
       <button class="icon-btn" type="button" id="cartBtn" data-ia="cart">${ICONS.bag}<span class="badge" id="badge" hidden>0</span></button>
     </div>
   </header>`;
@@ -82,14 +83,15 @@ function footerHtml() {
   return `
   <footer class="site-foot mt-auto">
     <div class="wrap grid gap-10 py-14 pb-28 md:grid-cols-[auto_1fr] md:items-center">
-      <img src="assets/img/logo.webp" alt="OrDesNuits" width="140" height="140" loading="lazy" class="mx-auto h-[140px] w-[140px] rounded-full md:mx-0">
+      <img id="footLogo" src="assets/img/logo.webp" alt="OrDesNuits" width="140" height="140" loading="lazy" class="mx-auto h-[140px] w-[140px] rounded-full md:mx-0">
       <div class="flex flex-col gap-4 text-center md:text-start">
         <p class="display m-0 text-2xl italic text-gold-hi" data-i="tagline"></p>
         <div class="flex flex-wrap justify-center gap-x-7 gap-y-2 text-sm text-muted md:justify-start">
           <a href="maisons.html" data-i="nav_houses"></a>
-          <a href="#" data-i="legal"></a>
-          <a href="#" data-i="terms"></a>
-          <a href="#" data-i="privacy"></a>
+          <a href="legal.html#mentions" data-i="legal"></a>
+          <a href="legal.html#cgv" data-i="terms"></a>
+          <a href="legal.html#confidentialite" data-i="privacy"></a>
+          <a href="compte.html" data-i="account"></a>
           <button type="button" id="footLang" data-i="lang_title"></button>
         </div>
         <p class="m-0 text-xs text-muted" data-i="adult"></p>
@@ -133,7 +135,7 @@ async function renderCart() {
     <div class="flex justify-between text-muted"><span>${esc(t("subtotal"))}</span><span>${format(s.subtotal)}</span></div>
     ${s.discount ? `<div class="flex justify-between text-rose"><span>${esc(t("free"))}</span><span>−${format(s.discount)}</span></div>` : ""}
     <div class="display flex justify-between text-xl"><span>${esc(t("total"))}</span><span>${format(s.total)}</span></div>
-    <a class="btn btn-gold mt-2 w-full" id="checkout" target="_blank" rel="noopener" href="${cart.whatsappLink(s)}">${ICONS.whatsapp.replace("<svg", '<svg width="18" height="18"')}${esc(t("checkout"))}</a>`;
+    <a class="btn btn-gold mt-2 w-full" id="checkout" href="commande.html">${esc(t("checkout_go"))}</a>`;
 }
 
 export function addToCart(id, qty = 1, btn) {
@@ -158,6 +160,12 @@ export function mountChrome({ active, onLangChange } = {}) {
   const relang = () => { mountChrome({ active, onLangChange }); resetConcierge(); onLangChange?.(); };
   document.getElementById("conciergeBtn")?.addEventListener("click", () => toggleConcierge());
   document.getElementById("langBtn")?.addEventListener("click", () => langPicker(relang));
+  /* Entrée secrète du Salon privé : 5 touches rapides sur le logo du pied de page */
+  let taps = 0, tapTimer;
+  document.getElementById("footLogo")?.addEventListener("click", () => {
+    taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => (taps = 0), 2500);
+    if (taps >= 5) location.href = "admin.html";
+  });
   document.getElementById("footLang")?.addEventListener("click", () => langPicker(relang));
   const drawer = document.getElementById("drawer");
   document.getElementById("cartBtn")?.addEventListener("click", () => drawer.classList.add("open"));
@@ -165,7 +173,6 @@ export function mountChrome({ active, onLangChange } = {}) {
   drawer?.addEventListener("click", (e) => {
     const b = e.target.closest("[data-q]");
     if (b) { const id = b.dataset.q; cart.summary().then((s) => { const l = s.lines.find((x) => x.p.id === id); cart.setQty(id, (l?.q || 0) + Number(b.dataset.d)); }); }
-    if (e.target.closest("#checkout")) setTimeout(() => cart.clear(), 400);
   });
   if (!mountChrome.bound) {
     mountChrome.bound = true;
