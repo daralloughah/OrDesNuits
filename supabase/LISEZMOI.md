@@ -113,3 +113,17 @@ Pour la démo au fournisseur : **Salon → Réglages → Charger les données de
 | Journal du Concierge | personne (serveur uniquement) | serveur |
 
 Paiement en ligne (Stripe) et e-mails de commande : prochaine étape.
+
+## Mise à jour v2.4 (base déjà installée)
+
+Dans l'assistant IA de Supabase, fais exécuter **dans l'ordre** `v1.6.sql` puis `v2.4.sql` (les deux peuvent être relancés sans risque). Ils ajoutent :
+
+| Ajout | Qui peut lire | Qui peut modifier |
+|---|---|---|
+| Affiliés (`affiliates`) | le gérant | le gérant |
+| Livraison offerte / cadeau (réglage `shop`) | tout le monde | le gérant |
+| Avis (`reviews`) | tout le monde, une fois validés | le client livré (via `submit_review`), le gérant valide |
+| Paniers en attente (`carts`) | le gérant | uniquement si le client a coché l'accord (`save_cart`) |
+| Code promo d'un affilié (`check_promo`) | renvoie seulement le %, jamais la fiche | le gérant (fiche affilié) |
+| Espace partenaire (`my_affiliate`) | l'affilié connecté, ses propres chiffres | personne |
+| Dossier investisseur (`investor_snapshot`) | qui a le lien à jeton, chiffres agrégés seulement | le gérant régénère le lien |

@@ -23,3 +23,13 @@ export function format(amount) {
 
 /* Raccourci : prix en euros → texte dans la devise du visiteur */
 export const price = (eur) => format(convert(eur));
+
+/* Prix « maison de luxe » : les centimes en petit, surélevés (19⁹⁰ €) */
+export function formatLux(amount) {
+  const { cur, locale } = langInfo();
+  const parts = new Intl.NumberFormat(locale, { style: "currency", currency: cur, maximumFractionDigits: NO_DECIMALS.includes(cur) ? 0 : 2 }).formatToParts(amount);
+  const frac = parts.find((x) => x.type === "fraction");
+  if (!frac || /^0+$/.test(frac.value)) return format(amount).replace(/[.,]00(?=\D|$)/, "");
+  return parts.map((x) => x.type === "decimal" ? "" : x.type === "fraction" ? `<sup class="cts">${x.value}</sup>` : x.value.replace(/[<>&]/g, "")).join("");
+}
+export const priceLux = (eur) => formatLux(convert(eur));

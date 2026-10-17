@@ -12,6 +12,24 @@ import * as A from "../admin/analytics.js";
 import { openStudio, compress } from "../admin/studio.js";
 import { allOrders, updateOrder, createOrder, customers, subscribers, seedDemo, clearDemo, hasDemo, BACKEND_MODE, loadAdminData, setOrderStatus, adminCreateOrder, isAdmin, signIn, signOut, currentUser, ready } from "../core/backend.js";
 import { countries, countryName, flag, FR_REGIONS } from "../core/places.js";
+import { OFFER } from "../config.js";
+import { saving, bestCost } from "../core/pricing.js";
+import * as OFF from "../admin/offline.js";
+import { snapshotAdmin, restoreAdmin, patchOrderLocal, addOrderLocal } from "../core/backend.js";
+import { growth, growthTeaser } from "../admin/growth.js";
+import { adStudio } from "../admin/adstudio.js";
+import { openVideo } from "../admin/video.js";
+import { openEraser } from "../admin/eraser.js";
+import * as AFF from "../admin/affiliates.js";
+import { affView } from "../admin/affview.js";
+import * as QG from "../admin/qg.js";
+import * as SHOPX from "../core/shop.js";
+import { rest } from "../core/sb.js";
+import { nextQuote, quoteHtml } from "../admin/quotes.js";
+import { scene } from "../ui/luxe.js";
+import { watchErrors } from "../ui/notify.js";
+import { funnel, STEPS, seedDemoEvents } from "../core/track.js";
+watchErrors();
 
 const app = document.getElementById("app");
 const eur = (v) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(v || 0);
@@ -21,7 +39,7 @@ const CATS = { miel: "Miel", huile: "Huile", bougie: "Bougie", gel: "Gel retarda
 const SHOPS = { lui: "Pour lui", elle: "Pour elle" };
 const FRAMES = { none: "Aucun", promo: "Promo", new: "Nouveau", fav: "Coup de cœur" };
 const COMPTA_KEY = "odn.compta";
-let view = "salon";
+let view = "qg";
 let period = "30";
 let filter = { shop: "all", q: "" };
 let ofilter = "all";
@@ -104,13 +122,18 @@ function columns(series) {
 /* ---------- Connexion ---------- */
 /* En ligne : vraie connexion (e-mail + mot de passe) d'un compte déclaré gérant */
 async function remoteGate() {
-  await ready();
-  if (currentUser() && (await isAdmin())) return true;
+  if (!OFF.online()) {
+    // hors connexion : on fait confiance au dernier accès gérant vérifié sur CET appareil
+    if (currentUser() && ls.get("odn.admin.ok") === currentUser().id) return true;
+  } else {
+    await ready();
+    if (currentUser() && (await isAdmin())) { ls.set("odn.admin.ok", currentUser().id); return true; }
+  }
   const u = currentUser();
   app.innerHTML = `
     <section class="adm-gate">
       <div class="seal"><img src="assets/img/logo.webp" alt="OrDesNuits"></div>
-      <h1 class="display">Le Salon privé</h1>
+      <h1 class="display">Le Salon privé</h1><span class="ornament orn-img" aria-hidden="true"></span>
       <p>${u ? `Le compte ${esc(u.email)} n'est pas gérant.` : "Connecte-toi avec ton compte gérant."}</p>
       <form class="adm-login" id="admLogin" novalidate>
         <input class="adm-input" id="a-email" type="email" autocomplete="username" placeholder="E-mail" value="${esc(u?.email || "")}" required>
@@ -129,7 +152,7 @@ async function remoteGate() {
       btn.disabled = true; btn.textContent = "Connexion…";
       try {
         await signIn({ email: f.querySelector("#a-email").value, password: f.querySelector("#a-pass").value });
-        if (await isAdmin()) { resolve(true); return; }
+        if (await isAdmin()) { ls.set("odn.admin.ok", currentUser().id); resolve(true); return; }
         toast("Ce compte n'est pas gérant");
       } catch (x) {
         toast(x.message === "unconfirmed" ? "Confirme d'abord ton e-mail (lien reçu)" : x.message === "network" ? "Pas de connexion internet" : "E-mail ou mot de passe incorrect");
@@ -147,7 +170,7 @@ async function gate() {
   app.innerHTML = `
     <section class="adm-gate">
       <div class="seal"><img src="assets/img/logo.webp" alt="OrDesNuits"></div>
-      <h1 class="display">Le Salon privé</h1>
+      <h1 class="display">Le Salon privé</h1><span class="ornament orn-img" aria-hidden="true"></span>
       <p>${first ? "Première visite : choisis ton code secret à 4 chiffres." : "Entre ton code secret."}</p>
       <div class="pin" id="pin">${[0, 1, 2, 3].map((i) => `<input inputmode="numeric" maxlength="1" aria-label="Chiffre ${i + 1}" autocomplete="off" id="pin${i}">`).join("")}</div>
       <p class="at-hint">Ton code reste sur cet appareil. Avec Supabase, il sera remplacé par une vraie connexion sécurisée.</p>
@@ -175,6 +198,7 @@ async function gate() {
 
 /* ---------- Habillage ---------- */
 const IC = {
+  qg: '<svg viewBox="0 0 24 24"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="M12 7l2 4 4 .5-3 2.8.8 4L12 16l-3.8 2.3.8-4-3-2.8 4-.5z"/></svg>',
   salon: '<svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 4v4h6V4z"/></svg>',
   commandes: '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
   produits: '<svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg>',
@@ -182,10 +206,12 @@ const IC = {
   compta: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h8"/></svg>',
   atelier: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-8 8"/></svg>',
   reglages: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
+  affilies: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3 3 0 010 7M18 14.5c2 .8 3 2.8 3 5.5"/></svg>',
+  croissance: '<svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M5 16l5-5 4 3 6-7"/><path d="M15 7h5v5"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
 };
-const NAV = [["salon", "Tableau"], ["commandes", "Commandes"], ["produits", "Produits"], ["clients", "Clients"], ["compta", "Compta"], ["atelier", "Atelier"], ["reglages", "Réglages"]];
-const MOBILE = ["salon", "commandes", "produits", "clients"];
+const NAV = [["qg", "QG"], ["salon", "Statistiques"], ["commandes", "Commandes"], ["produits", "Produits"], ["clients", "Clients"], ["croissance", "Croissance"], ["affilies", "Affiliés"], ["compta", "Compta"], ["atelier", "Atelier"], ["reglages", "Réglages"]];
+const MOBILE = ["qg", "commandes", "produits", "affilies"];
 function shell(inner) {
   const pend = allOrders().filter((o) => o.status === "nouvelle").length;
   const badge = (k) => (k === "commandes" && pend ? `<b class="nav-badge">${pend}</b>` : "");
@@ -196,13 +222,53 @@ function shell(inner) {
       ${NAV.map(([k, l]) => `<button type="button" class="${MOBILE.includes(k) ? "" : "desk"}" data-view="${k}" aria-current="${k === view}">${IC[k]}<span>${l}</span>${badge(k)}</button>`).join("")}
       <button type="button" class="mob" data-more aria-current="${!MOBILE.includes(view)}">${IC.plus}<span>Plus</span></button>
     </aside>
-    <main class="adm2-main">${inner}</main>
+    <main class="adm2-main">${syncChip()}${hudBar()}${quoteBar()}${inner}</main>
   </div>`;
 }
+/* Pastille réseau : hors ligne / modifs en attente / synchro */
+function syncChip() {
+  if (!store.REMOTE) return "";
+  const st = OFF.state();
+  if (st.online && !st.pending && !st.failed.length && !st.syncing) return `<div id="syncChip"></div>`;
+  const label = st.syncing ? "Synchronisation…"
+    : !st.online ? `Hors ligne${st.pending ? ` · ${st.pending} modif${st.pending > 1 ? "s" : ""} en attente` : " · tout est gardé sur le téléphone"}`
+    : st.pending ? `${st.pending} modif${st.pending > 1 ? "s" : ""} à envoyer` : "";
+  return `<div id="syncChip"><div class="sync-chip ${st.online ? "on" : "off"}">
+    <i></i><span>${label}${st.failed.length ? ` · ${st.failed.length} refusée${st.failed.length > 1 ? "s" : ""}` : ""}</span>
+    ${st.online && st.pending && !st.syncing ? `<button type="button" data-sync>Envoyer</button>` : ""}
+    ${st.failed.length ? `<button type="button" data-failed>Voir</button>` : ""}
+  </div></div>`;
+}
+/* Une parole de bâtisseur à chaque changement de page (pas à chaque rafraîchissement) */
+let quote = null, quoteView = null;
+function quoteBar() {
+  if (view !== quoteView || !quote) { quote = nextQuote(); quoteView = view; }
+  return quoteHtml(quote, esc);
+}
+function hudBar() { try { return QG.hud(QG.state(store.products())); } catch (x) { console.warn(x); return ""; } }
+function paintSync() { const el = document.getElementById("syncChip"); if (el) el.outerHTML = syncChip(); }
+function saveAdminSnap() { if (store.REMOTE) OFF.saveSnap({ admin: snapshotAdmin() }); }
+
+/* Envoie la file d'attente, puis recharge tout */
+async function syncNow() {
+  if (!store.REMOTE || !OFF.online() || !OFF.queue().some((o) => !o.failed)) return;
+  const r = await OFF.flush({
+    upsert: (op) => store.replay(op), remove: (op) => store.replay(op), stock: (op) => store.replay(op),
+    status: (op) => setOrderStatus(op.id, op.status, op.payment),
+    waorder: (op) => adminCreateOrder(op.order),
+    aff: (op) => AFF.replay(op),
+  });
+  if (r.done) {
+    try { await Promise.all([store.reload(), loadAdminData(), AFF.load()]); saveAdminSnap(); } catch {}
+    toast(`${r.done} modif${r.done > 1 ? "s" : ""} envoyée${r.done > 1 ? "s" : ""} ✦`);
+    if (!document.querySelector(".adm-editor, .scrim, .atelier")) route(true);
+  }
+}
+
 function moreSheet() {
   const s = document.createElement("div");
   s.className = "scrim";
-  s.innerHTML = `<div class="sheet adm-more">${[["compta", "Comptabilité", "Livre des recettes, URSSAF, marges"], ["atelier", "Atelier", "Visuels promo, logo, badges"], ["reglages", "Réglages", "Sauvegarde, code, données de démo"]].map(([k, l, d]) => `
+  s.innerHTML = `<div class="sheet adm-more">${[["salon", "Statistiques", "Chiffres détaillés, pays, produits, horaires"], ["clients", "Clients", "Fiches, fidélité, inscrits aux offres"], ["croissance", "Croissance", "Budget pub conseillé, objectif du mois, plan de test"], ["atelier", "Atelier", "Studio pub, vidéo, effaceur, visuels"], ["compta", "Comptabilité", "Livre des recettes, URSSAF, marges"], ["reglages", "Réglages", "Sauvegarde, synchro, données de démo"]].map(([k, l, d]) => `
     <button type="button" data-go="${k}">${IC[k]}<span><b>${l}</b><small>${d}</small></span></button>`).join("")}
     <a href="maisons.html" class="adm-link">Voir la boutique →</a></div>`;
   s.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) { view = b.dataset.go; route(); } if (b || e.target === s) s.remove(); });
@@ -218,6 +284,9 @@ async function editor(id) {
     offer: true, pinned: false, active: true, stock: 20, lowAt: 5, sold: 0, img: null, gallery: [], fit: "cover", desc: { fr: "", en: "" },
   };
   p.gallery ||= []; p.desc ||= { fr: "", en: "" };
+  p.tiers ||= []; p.usage ||= {}; p.compo ||= {}; p.warn ||= {}; p.facts ||= {}; p.unitName ||= {};
+  p.wholesale ||= { active: false, unit: { fr: "" }, min: 5, max: 50, tiers: [] };
+  const L2 = (o, l) => (Array.isArray(o?.[l]) ? o[l].join("\n") : o?.[l] || "");
   const sheet = document.createElement("div");
   sheet.className = "adm-editor";
   document.body.append(sheet);
@@ -230,11 +299,47 @@ async function editor(id) {
   function photos() {
     return `<div class="ed-photos">
       ${[p.img, ...p.gallery].map((src, i) => src ? `<figure><img src="${esc(src)}" alt=""><figcaption>${i ? "Galerie" : "Principale"}</figcaption>
-        <div><button type="button" data-studio="${i}">Atelier</button><button type="button" data-rmphoto="${i}">Retirer</button>${i ? `<button type="button" data-main="${i}">★</button>` : ""}</div></figure>` : "").join("")}
+        <div><button type="button" data-studio="${i}">Atelier</button><button type="button" data-erasephoto="${i}">Effacer</button><button type="button" data-rmphoto="${i}">Retirer</button>${i ? `<button type="button" data-main="${i}">★</button>` : ""}</div></figure>` : "").join("")}
       <div class="ed-add">
         <button type="button" data-studio="new">✦ Créer dans l'Atelier</button>
         <label>Importer une photo<input type="file" accept="image/*" id="edFile" hidden></label>
       </div></div>`;
+  }
+
+  function tierRows() {
+    const rows = p.tiers.filter((x) => x.q !== 1);
+    if (!rows.length) return `<p class="at-hint">Aucun lot : le produit se vend à l'unité.</p>`;
+    return rows.map((x, i) => {
+      const s = x.q > 0 && x.p > 0 ? saving({ ...p, tiers: [] }, x) : null;
+      return `<div class="tier-row" data-ti="${i}">
+        <label><span>Quantité</span><input class="adm-input" data-tq inputmode="numeric" value="${x.q || ""}"></label>
+        <label><span>Prix du lot (€)</span><input class="adm-input" data-tp inputmode="decimal" value="${x.p || ""}"></label>
+        <output>${s ? `${s.pct > 0 ? `−${s.pct} %` : "0 %"}<small>${s.per.toFixed(2).replace(".", ",")} €/u</small>` : "—"}</output>
+        <button type="button" class="star" data-pop="${i}" aria-pressed="${x.label === "popular"}" title="Le plus choisi">★</button>
+        <button type="button" class="rm" data-rmtier="${i}" aria-label="Retirer">✕</button>
+      </div>`;
+    }).join("");
+  }
+  function wsRows() {
+    const w = p.wholesale;
+    if (!w.tiers.length) return `<p class="at-hint">Aucun palier.</p>`;
+    const base = w.tiers[0]?.q ? w.tiers[0].p / w.tiers[0].q : 0;
+    return w.tiers.map((x, i) => {
+      const per = x.q > 0 ? x.p / x.q : 0;
+      const pct = base && per ? Math.round((1 - per / base) * 100) : 0;
+      return `<div class="tier-row" data-wi="${i}">
+        <label><span>Boîtes</span><input class="adm-input" data-wq inputmode="numeric" value="${x.q || ""}"></label>
+        <label><span>Prix total (€)</span><input class="adm-input" data-wp inputmode="decimal" value="${x.p || ""}"></label>
+        <output>${per ? `${pct > 0 ? `−${pct} %` : "base"}<small>${per.toFixed(2).replace(".", ",")} €/boîte</small>` : "—"}</output>
+        <button type="button" class="rm" data-rmws="${i}" aria-label="Retirer">✕</button>
+      </div>`;
+    }).join("");
+  }
+  function repaintRows() {
+    const a = sheet.querySelector("#tierRows"), b = sheet.querySelector("#wsRows");
+    // on ne remplace que les pastilles calculées, pour garder le clavier ouvert
+    a?.querySelectorAll(".tier-row").forEach((row, i) => { const tmp = document.createElement("div"); tmp.innerHTML = tierRows(); const o = tmp.querySelectorAll(".tier-row output")[i]; if (o) row.querySelector("output").innerHTML = o.innerHTML; });
+    b?.querySelectorAll(".tier-row").forEach((row, i) => { const tmp = document.createElement("div"); tmp.innerHTML = wsRows(); const o = tmp.querySelectorAll(".tier-row output")[i]; if (o) row.querySelector("output").innerHTML = o.innerHTML; });
   }
 
   function render() {
@@ -264,7 +369,45 @@ async function editor(id) {
         <div class="at-chips">${Object.entries(FRAMES).map(([k, v]) => `<button type="button" data-frame="${k}" aria-pressed="${p.frame === k}">${v}</button>`).join("")}</div>
         <p class="at-label">Rendu de la photo</p>
         <div class="at-chips"><button type="button" data-fit="cover" aria-pressed="${p.fit !== "contain"}">Remplit la vitrine</button><button type="button" data-fit="contain" aria-pressed="${p.fit === "contain"}">Posée sur le piédestal (détourée)</button></div>
-        <div class="ed-switches">${sw("active", "Visible sur le site")}${sw("offer", "Offre 3 achetés, le 4ᵉ offert")}${sw("pinned", "Épingler en tête des meilleures ventes")}</div>
+        <div class="ed-switches">${sw("active", "Visible sur le site")}${OFFER.active ? sw("offer", "Offre 3 achetés, le 4ᵉ offert") : ""}${sw("pinned", "Épingler en tête des meilleures ventes")}</div>
+
+        <details class="ed-sec" open><summary>Formats & lots <small>1 stick, 2, 3, 6, 12, boîte de 24…</small></summary>
+          <p class="at-hint">Le prix de 1 unité est le « Prix » ci-dessus. Ajoute les lots : le % d'économie se calcule tout seul. ★ = mis en avant « Le plus choisi » (sinon celui du milieu).</p>
+          <div class="fld-row">
+            ${field("Nom de l'unité (1)", `<input class="adm-input" id="f-u1" value="${esc(p.unitName.fr?.[0] || "")}" placeholder="stick">`)}
+            ${field("Au pluriel", `<input class="adm-input" id="f-u2" value="${esc(p.unitName.fr?.[1] || "")}" placeholder="sticks">`)}
+          </div>
+          <div id="tierRows">${tierRows()}</div>
+          <button type="button" class="adm-btn ghost" data-addtier>+ Ajouter un lot</button>
+        </details>
+
+        <details class="ed-sec"><summary>Fiche détaillée <small>points forts, rituel, composition, mises en garde</small></summary>
+          ${field("Points forts (un par ligne)", `<textarea class="adm-input" id="f-facts-fr" rows="3" placeholder="Stick de 10 g&#10;Se glisse partout">${esc(L2(p.facts, "fr"))}</textarea>`)}
+          ${field("Rituel / utilisation", `<textarea class="adm-input" id="f-usage-fr" rows="3">${esc(L2(p.usage, "fr"))}</textarea>`)}
+          ${field("Composition", `<textarea class="adm-input" id="f-compo-fr" rows="2">${esc(L2(p.compo, "fr"))}</textarea>`)}
+          ${field("⚠ Mises en garde (une par ligne)", `<textarea class="adm-input warn-in" id="f-warn-fr" rows="4" placeholder="Ne convient pas aux enfants de moins de 1 an.">${esc(L2(p.warn, "fr"))}</textarea>`)}
+          <p class="at-hint">Version anglaise (affichée pour les autres langues) :</p>
+          ${field("Points forts · EN", `<textarea class="adm-input" id="f-facts-en" rows="2">${esc(L2(p.facts, "en"))}</textarea>`)}
+          ${field("Rituel · EN", `<textarea class="adm-input" id="f-usage-en" rows="2">${esc(L2(p.usage, "en"))}</textarea>`)}
+          ${field("Composition · EN", `<textarea class="adm-input" id="f-compo-en" rows="2">${esc(L2(p.compo, "en"))}</textarea>`)}
+          ${field("Mises en garde · EN", `<textarea class="adm-input" id="f-warn-en" rows="3">${esc(L2(p.warn, "en"))}</textarea>`)}
+        </details>
+
+        <details class="ed-sec" ${p.wholesale.active ? "open" : ""}><summary>Revendeurs <small>vente par boîtes, de 5 à 50</small></summary>
+          <div class="ed-switches">${`<button type="button" class="sw" role="switch" data-wsw aria-checked="${!!p.wholesale.active}"><i></i>Proposer aux revendeurs</button>`}</div>
+          <div class="fld-row">
+            ${field("Unité vendue", `<input class="adm-input" id="w-unit" value="${esc(p.wholesale.unit?.fr || "")}" placeholder="Boîte de 24 sticks">`)}
+            ${field("Prix d'une boîte (€)", `<input class="adm-input" id="w-base" inputmode="decimal" value="${p.wholesale.base ?? ""}" placeholder="Ex. 30">`)}
+          </div>
+          <div class="ed-switches"><button type="button" class="sw" role="switch" data-wref aria-checked="${!!p.wholesale.ref}"><i></i>Ce produit sert de grille pour tout l'espace pro</button></div>
+          <div class="fld-row">
+            ${field("Minimum", `<input class="adm-input" id="w-min" inputmode="numeric" value="${p.wholesale.min ?? 5}">`)}
+            ${field("Maximum", `<input class="adm-input" id="w-max" inputmode="numeric" value="${p.wholesale.max ?? 50}">`)}
+          </div>
+          <div id="wsRows">${wsRows()}</div>
+          <button type="button" class="adm-btn ghost" data-addws>+ Ajouter un palier</button>
+          <p class="at-hint">Paliers (facultatifs) : prix TOTAL pour X boîtes (ex. 10 boîtes = 290 €). Les paliers du produit « grille » deviennent la remise par montant de tout l'espace pro : un revendeur qui mélange plusieurs produits obtient le même % que s'il avait pris une seule sorte de boîte pour la même somme.</p>
+        </details>
         ${field("Description (français)", `<textarea class="adm-input" id="f-desc-fr" rows="3">${esc(p.desc.fr || "")}</textarea>`)}
         ${field("Description (anglais, pour l'international)", `<textarea class="adm-input" id="f-desc-en" rows="3">${esc(p.desc.en || "")}</textarea>`)}
         <p class="at-hint">Pas d'allégation santé (« aphrodisiaque », « booste… ») : la loi l'interdit sur les aliments. Parle des saveurs, des textures, du moment.</p>
@@ -283,6 +426,34 @@ async function editor(id) {
     p.price = num("#f-price") ?? 0; p.promo = num("#f-promo"); p.cost = num("#f-cost");
     p.stock = Math.max(0, Math.round(num("#f-stock") ?? 0)); p.lowAt = Math.max(0, Math.round(num("#f-lowAt") ?? 5));
     p.desc = { fr: v("#f-desc-fr"), en: v("#f-desc-en") };
+    const lines = (id) => v(id).split("\n").map((x) => x.trim()).filter(Boolean);
+    const u1 = v("#f-u1").trim(), u2 = v("#f-u2").trim();
+    p.unitName = u1 ? { fr: [u1, u2 || u1], en: [u1, u2 || u1] } : {};
+    p.facts = { fr: lines("#f-facts-fr"), en: lines("#f-facts-en") };
+    p.usage = { fr: v("#f-usage-fr"), en: v("#f-usage-en") };
+    p.compo = { fr: v("#f-compo-fr"), en: v("#f-compo-en") };
+    p.warn = { fr: v("#f-warn-fr"), en: v("#f-warn-en") };
+    const nn = (x) => parseFloat(String(x).replace(",", ".")) || 0;
+    const rows = [...sheet.querySelectorAll("#tierRows .tier-row")];
+    if (rows.length) {
+      const old = p.tiers.filter((x) => x.q !== 1);
+      p.tiers = rows.map((r, i) => ({ q: Math.round(nn(r.querySelector("[data-tq]").value)), p: nn(r.querySelector("[data-tp]").value), ...(old[i]?.label ? { label: old[i].label } : {}) }));
+    }
+    const ws = [...sheet.querySelectorAll("#wsRows .tier-row")];
+    p.wholesale.unit = { fr: v("#w-unit"), en: v("#w-unit") };
+    p.wholesale.base = nn(v("#w-base")) || null;
+    p.wholesale.min = Math.max(1, Math.round(nn(v("#w-min")) || 5));
+    p.wholesale.max = Math.max(p.wholesale.min, Math.round(nn(v("#w-max")) || 50));
+    if (ws.length) p.wholesale.tiers = ws.map((r) => ({ q: Math.round(nn(r.querySelector("[data-wq]").value)), p: nn(r.querySelector("[data-wp]").value) }));
+  }
+  /* Avant d'enregistrer : on garde l'unité au prix normal et les lots valides, triés */
+  function clean() {
+    const one = { q: 1, p: p.promo && p.promo < p.price ? p.promo : p.price };
+    const lots = p.tiers.filter((x) => x.q > 1 && x.p > 0).sort((a, b) => a.q - b.q);
+    p.tiers = lots.length ? [one, ...lots] : [];
+    p.wholesale.tiers = p.wholesale.tiers.filter((x) => x.q > 0 && x.p > 0).sort((a, b) => a.q - b.q);
+    if (!p.wholesale.base && p.wholesale.tiers.length) p.wholesale.base = Math.round((p.wholesale.tiers[0].p / p.wholesale.tiers[0].q) * 100) / 100;
+    if (!p.wholesale.base) p.wholesale.active = false;
   }
   function preview() {
     const prev = { ...p, name: p.name || "Nom du produit" };
@@ -290,7 +461,7 @@ async function editor(id) {
     sheet.querySelector("#edPreview .card")?.setAttribute("data-shop", p.shop);
   }
 
-  sheet.addEventListener("input", (e) => { if (e.target.closest(".ed-form")) { read(); preview(); } });
+  sheet.addEventListener("input", (e) => { if (e.target.closest(".ed-form")) { read(); preview(); repaintRows(); } });
   sheet.addEventListener("change", async (e) => {
     if (e.target.id === "edFile" && e.target.files[0]) {
       const data = await compress(e.target.files[0]);
@@ -305,6 +476,13 @@ async function editor(id) {
     if (d.frame) { p.frame = d.frame; read(); render(); return; }
     if (d.fit) { p.fit = d.fit; read(); render(); return; }
     if (d.sw) { p[d.sw] = !p[d.sw]; b.setAttribute("aria-checked", p[d.sw]); preview(); return; }
+    if (b.hasAttribute("data-wref")) { read(); p.wholesale.ref = !p.wholesale.ref; b.setAttribute("aria-checked", p.wholesale.ref); return; }
+    if (b.hasAttribute("data-wsw")) { read(); p.wholesale.active = !p.wholesale.active; b.setAttribute("aria-checked", p.wholesale.active); return; }
+    if (b.hasAttribute("data-addtier")) { read(); const last = p.tiers.filter((x) => x.q !== 1).at(-1); p.tiers.push({ q: last ? last.q * 2 : 2, p: 0 }); render(); sheet.querySelector("#tierRows .tier-row:last-child [data-tp]")?.focus(); return; }
+    if (d.rmtier) { read(); const lots = p.tiers.filter((x) => x.q !== 1); lots.splice(Number(d.rmtier), 1); p.tiers = lots; render(); return; }
+    if (d.pop) { read(); const lots = p.tiers.filter((x) => x.q !== 1); lots.forEach((x, i) => { if (i === Number(d.pop)) x.label = x.label === "popular" ? "" : "popular"; else delete x.label; }); p.tiers = lots; render(); return; }
+    if (b.hasAttribute("data-addws")) { read(); const last = p.wholesale.tiers.at(-1); p.wholesale.tiers.push({ q: last ? last.q * 2 : 5, p: 0 }); p.wholesale.active = true; render(); return; }
+    if (d.rmws) { read(); p.wholesale.tiers.splice(Number(d.rmws), 1); render(); return; }
     if (d.studio) {
       read();
       const i = d.studio === "new" ? -1 : Number(d.studio);
@@ -315,6 +493,13 @@ async function editor(id) {
         else if (i === 0) p.img = out; else p.gallery[i - 1] = out;
         render();
       }
+      return;
+    }
+    if (d.erasephoto) {
+      read();
+      const i = Number(d.erasephoto);
+      const out = await openEraser({ src: i === 0 ? p.img : p.gallery[i - 1] });
+      if (out) { if (i === 0) p.img = out; else p.gallery[i - 1] = out; render(); }
       return;
     }
     if (d.rmphoto) { const i = Number(d.rmphoto); if (i === 0) { p.img = p.gallery.shift() || null; } else p.gallery.splice(i - 1, 1); read(); render(); return; }
@@ -328,12 +513,13 @@ async function editor(id) {
       read();
       if (!p.name) { toast("Donne un nom au produit"); sheet.querySelector("#f-name").focus(); return; }
       if (!p.id) p.id = store.slug(p.name);
+      clean();
       const btn = sheet.querySelector('[data-ed="save"]');
       if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = "Enregistrement…"; }
       const ok = await store.upsert(p);
       if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label; }
       if (!ok) { toast(store.REMOTE ? "Enregistrement impossible : vérifie ta connexion" : "Mémoire pleine : retire une photo ou exporte ton catalogue"); return; }
-      close(); toast(base ? "Modifications enregistrées" : "Produit ajouté à la boutique"); route();
+      close(); toast(ok === "queued" ? "Hors ligne : gardé sur le téléphone, envoi au retour du réseau" : base ? "Modifications enregistrées" : "Produit ajouté à la boutique"); route();
     }
   });
   function close() { sheet.remove(); document.documentElement.classList.remove("no-scroll"); }
@@ -352,7 +538,7 @@ function salon() {
   const liveTotal = s.countries.reduce((a, c) => a + c.orders, 0) || 1;
   const lastOrder = allOrders()[0];
   shell(`
-    <header class="adm2-head"><p class="eyebrow">OrDesNuits</p><h1 class="display">${hello} Abd</h1>
+    <header class="adm2-head"><p class="eyebrow">OrDesNuits</p><h1 class="display">${hello} Abd</h1><span class="ornament orn-img adm-orn" aria-hidden="true"></span>
       <p class="sub">${lastOrder ? `<span class="live-dot"></span>Dernière commande ${A.ago(lastOrder.at)}${lastOrder.shipping?.country ? ` · ${flag(lastOrder.shipping.country)} ${esc(countryName(lastOrder.shipping.country, "fr"))}` : ""}` : "Aucune commande pour l'instant."}</p></header>
     ${demoBanner()}
     ${periodChips()}
@@ -368,10 +554,15 @@ function salon() {
       <div class="kpi2 ${st.low.length + st.out.length ? "warn" : ""}"><span>Stock</span><b>${eur(st.value)}</b><small>${st.out.length} épuisé · ${st.low.length} bas</small></div>
     </div>
 
+    <section class="adm2-box funnel" id="funnelBox"><div class="adm2-boxhead"><h2 class="display">Parcours client</h2><small class="muted">30 derniers jours</small></div><p class="at-hint">Chargement…</p></section>
+
     <section class="adm2-box insights">
       <h2 class="display">Pistes stratégiques</h2>
       <ul>${ins.map((i) => `<li class="ins ${i.tone}" ${i.go ? `data-view="${i.go}"` : ""}><i></i><p>${esc(i.text)}</p></li>`).join("")}</ul>
     </section>
+
+    ${(() => { const g = growthTeaser(products); return `<button type="button" class="gr-teaser" data-view="croissance">
+      <span><small>Conseiller pub</small><b>Paie au maximum ${eur(g.first)} par commande</b><em>Objectif sain : ${eur(g.safe)} · Objectif du mois : ${eur(g.month)} / ${eur(g.goal)}</em></span><i>→</i></button>`; })()}
 
     <section class="adm2-box">
       <div class="adm2-boxhead"><h2 class="display">Chiffre d'affaires</h2><small class="muted">${A.PERIODS[period]}</small></div>
@@ -466,13 +657,15 @@ function orderSheet(id) {
         <h2 class="display">${esc([c.firstName, c.lastName].filter(Boolean).join(" ") || "Client")}</h2>
         <p class="o-info">${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a><br>` : ""}${c.phone ? esc(c.phone) + "<br>" : ""}
         ${flag(sh.country)} ${esc([sh.address, [sh.postcode, sh.city].filter(Boolean).join(" "), countryName(sh.country || "FR", "fr")].filter(Boolean).join(", "))}${sh.region ? `<br>Région : ${esc(FR_REGIONS[sh.region] || sh.region)}` : ""}</p>
-        <p class="at-hint">Passée le ${dt(o.at)} · ${o.source === "whatsapp" ? "via WhatsApp" : "sur le site"} · langue ${esc(o.lang || "fr")}${c.optin ? " · accepte les offres" : ""}</p>
+        <p class="at-hint">Passée le ${dt(o.at)} · ${o.source === "whatsapp" ? "via WhatsApp" : "sur le site"} · langue ${esc(o.lang || "fr")}${c.optin ? " · accepte les offres" : ""}${o.display?.ref ? ` · <b class="af-code">affilié ${esc(o.display.ref)}</b>` : ""}</p>
         ${phone ? `<a class="adm-btn ghost mt" target="_blank" rel="noopener" href="https://wa.me/${phone}?text=${encodeURIComponent(waMsg)}">Écrire sur WhatsApp</a>` : ""}
       </section>
       <section class="adm2-box">
         <h2 class="display">Contenu</h2>
         <ul class="o-lines">${o.lines.map((l) => `<li><span>${l.qty} × ${esc(l.name)}</span><span>${eur(l.unitEur * l.qty)}</span></li>`).join("")}</ul>
-        ${o.discountEur ? `<p class="o-tot rose"><span>Offert (3+1)</span><span>−${eur(o.discountEur)}</span></p>` : ""}
+        ${o.discountEur ? `<p class="o-tot rose"><span>${o.display?.promo ? `Remises (code ${esc(o.display.promo)} −${o.display.promoPct} %)` : "Remise"}</span><span>−${eur(o.discountEur)}</span></p>` : ""}
+        ${o.display?.shipEur != null ? `<p class="o-tot"><span>Livraison</span><span>${o.display.shipEur ? eur(o.display.shipEur) : "offerte"}</span></p>` : ""}
+        ${o.display?.gift ? `<p class="o-tot"><span>🎁 Emballage cadeau</span><span>${eur(o.display.giftEur || 0)}</span></p>` : ""}
         <p class="o-tot"><span>Total</span><b>${eur(o.totalEur)}</b></p>
       </section>
       <section class="adm2-box">
@@ -496,8 +689,16 @@ function orderSheet(id) {
     if (next === "confirmee" && !pay) { toast("Choisis le mode de paiement"); return; }
     if (next === "annulee" && !(await confirmSheet("Annuler la commande ?", o.stockApplied ? "Les articles seront remis en stock." : "La commande sera marquée annulée."))) return;
     if (store.REMOTE) {
-      try { await setOrderStatus(o.id, next, next === "confirmee" ? pay : null); await store.reload(); }
-      catch { toast("Action impossible : vérifie ta connexion"); return; }
+      try {
+        if (!OFF.online()) throw Object.assign(new Error("network"), { status: 0 });
+        await setOrderStatus(o.id, next, next === "confirmee" ? pay : null); await store.reload(); saveAdminSnap();
+      } catch (x) {
+        if (!OFF.isNetErr(x)) { toast("Action impossible"); return; }
+        OFF.enqueue({ type: "status", id: o.id, status: next, payment: next === "confirmee" ? pay : null });
+        patchOrderLocal(o.id, { status: next, ...(next === "confirmee" ? { payment: pay, paidAt: new Date().toISOString() } : {}) });
+        saveAdminSnap();
+        close(); toast("Hors ligne : modification gardée, envoi au retour du réseau"); route(); return;
+      }
       close(); toast(`Commande ${A.STATUS[next].toLowerCase()}`); route();
       return;
     }
@@ -548,24 +749,32 @@ function whatsappEntry() {
     if (b.hasAttribute("data-save")) {
       if (!parsed?.lines.length) { toast("Colle et analyse d'abord la commande"); return; }
       sheet.querySelectorAll("[data-match]").forEach((s) => (parsed.lines[Number(s.dataset.match)].id = s.value || null));
-      const lines = parsed.lines.filter((l) => l.id).map((l) => { const p = store.find(l.id); return { id: p.id, name: p.name, qty: l.qty, unitEur: p.promo && p.promo < p.price ? p.promo : p.price, shop: p.shop, category: p.category }; });
+      const lines = parsed.lines.filter((l) => l.id).map((l) => { const p = store.find(l.id); const tot = bestCost(p, l.qty); return { id: p.id, name: p.name, qty: l.qty, unitEur: Math.round((tot / l.qty) * 10000) / 10000, lineEur: tot, shop: p.shop, category: p.category }; });
       if (!lines.length) { toast("Associe au moins un produit"); return; }
-      const sub = lines.reduce((s, l) => s + l.unitEur * l.qty, 0);
-      const honey = lines.filter((l) => store.find(l.id)?.offer).flatMap((l) => Array(l.qty).fill(l.unitEur)).sort((a, b) => a - b);
+      const sub = lines.reduce((s, l) => s + l.lineEur, 0);
+      const honey = OFFER.active ? lines.filter((l) => store.find(l.id)?.offer).flatMap((l) => Array(l.qty).fill(l.unitEur)).sort((a, b) => a - b) : [];
       const disc = honey.slice(0, Math.floor(honey.length / 4)).reduce((s, v) => s + v, 0);
       const v = (id) => sheet.querySelector(id).value.trim();
       const country = v("#w-country");
       if (store.REMOTE) {
         b.disabled = true;
+        const order = {
+          source: "whatsapp", payment: pay || "whatsapp",
+          customer: { firstName: v("#w-first"), lastName: "", email: v("#w-email"), phone: v("#w-phone"), optin: false },
+          shipping: { country, region: country === "FR" ? v("#w-region") || null : null },
+          lang: "fr", lines, subtotalEur: sub, discountEur: disc, totalEur: Math.max(0, sub - disc),
+        };
         try {
-          await adminCreateOrder({
-            source: "whatsapp", payment: pay || "whatsapp",
-            customer: { firstName: v("#w-first"), lastName: "", email: v("#w-email"), phone: v("#w-phone"), optin: false },
-            shipping: { country, region: country === "FR" ? v("#w-region") || null : null },
-            lang: "fr", lines, subtotalEur: sub, discountEur: disc, totalEur: Math.max(0, sub - disc),
-          });
-          await store.reload();
-        } catch { b.disabled = false; toast("Enregistrement impossible : vérifie ta connexion"); return; }
+          if (!OFF.online()) throw Object.assign(new Error("network"), { status: 0 });
+          await adminCreateOrder(order);
+          await store.reload(); saveAdminSnap();
+        } catch (x) {
+          if (!OFF.isNetErr(x)) { b.disabled = false; toast("Enregistrement impossible"); return; }
+          OFF.enqueue({ type: "waorder", order });
+          addOrderLocal({ ...order, id: "En attente…", at: new Date().toISOString(), status: "confirmee", paidAt: new Date().toISOString(), offline: true });
+          saveAdminSnap();
+          close(); toast("Hors ligne : commande gardée, envoi au retour du réseau"); route(); return;
+        }
         close(); toast("Commande enregistrée, stock mis à jour"); route();
         return;
       }
@@ -611,17 +820,59 @@ function clients() {
     <header class="adm2-head"><p class="eyebrow">Clientèle</p><h1 class="display">Clients</h1>
       <p class="sub">${users.length} comptes · ${optinEmails.length} e-mails avec consentement</p></header>
     ${demoBanner()}
-    <div class="ac-tabs adm"><button type="button" data-ctab="comptes" aria-selected="${ctab === "comptes"}">Comptes (${users.length})</button><button type="button" data-ctab="emails" aria-selected="${ctab === "emails"}">E-mails offres (${optinEmails.length})</button></div>
+    <div class="ac-tabs adm"><button type="button" data-ctab="comptes" aria-selected="${ctab === "comptes"}">Comptes (${users.length})</button><button type="button" data-ctab="emails" aria-selected="${ctab === "emails"}">E-mails offres (${optinEmails.length})</button><button type="button" data-ctab="paniers" aria-selected="${ctab === "paniers"}">Paniers en attente</button><button type="button" data-ctab="avis" aria-selected="${ctab === "avis"}">Avis</button></div>
     <input type="search" class="adm-input" id="cq" placeholder="Rechercher un e-mail, un prénom…" value="${esc(filter.q)}">
-    ${ctab === "comptes" ? (users.length ? `<ul class="adm2-list mt">${users.filter((u) => !q || (u.email + u.firstName).toLowerCase().includes(q)).sort((a, b) => (spent[b.email]?.v || 0) - (spent[a.email]?.v || 0)).map((u) => `<li class="adm2-row">
+    ${ctab === "paniers" || ctab === "avis" ? `<div id="ctabBody"><p class="at-hint">Chargement…</p></div>` : ctab === "comptes" ? (users.length ? `<ul class="adm2-list mt">${users.filter((u) => !q || (u.email + u.firstName).toLowerCase().includes(q)).sort((a, b) => (spent[b.email]?.v || 0) - (spent[a.email]?.v || 0)).map((u) => `<li class="adm2-row">
         <span class="o-flag">${flag(u.country)}</span>
         <div class="grow"><b>${esc(u.firstName || "—")}</b><small>${esc(u.email)} · inscrit ${new Date(u.createdAt).toLocaleDateString("fr-FR")}${u.optin ? " · offres ✓" : ""}</small></div>
         <div class="o-end"><b>${eur(spent[u.email]?.v || 0)}</b><small>${spent[u.email]?.n || 0} cmd</small></div></li>`).join("")}</ul>` : `<div class="adm2-empty">${IC.clients}<p>Les comptes clients apparaîtront ici.</p></div>`)
     : `<div class="at-row wrap"><button type="button" class="adm-btn gold" data-copyemails>Copier tous les e-mails</button><button type="button" class="adm-btn ghost" data-csvemails>Exporter (CSV)</button></div>
        <p class="at-hint">Uniquement les personnes qui ont accepté de recevoir tes offres. Le RGPD interdit d'écrire aux autres.</p>
        ${optinEmails.length ? `<ul class="email-list">${optinEmails.filter((e) => !q || e.includes(q)).map((e) => { const s = subs.find((x) => x.email === e); return `<li><span>${esc(e)}</span><small>${s ? esc(s.source) : "compte"}</small></li>`; }).join("")}</ul>` : `<p class="at-hint mt">Aucun inscrit pour l'instant.</p>`}`}`);
+  if (ctab === "paniers") paniersTab();
+  if (ctab === "avis") avisTab();
   const qi = document.getElementById("cq");
   qi.addEventListener("input", () => { filter.q = qi.value; const pos = qi.selectionStart; clients(); const n = document.getElementById("cq"); n.focus(); n.setSelectionRange(pos, pos); });
+}
+
+/* Entonnoir de conversion : où les visiteurs s'arrêtent */
+async function paintFunnel() {
+  const el = document.getElementById("funnelBox");
+  if (!el) return;
+  const f = await funnel(30);
+  const top = Math.max(1, f.visit);
+  const conv = f.visit ? (f.order / f.visit) * 100 : 0;
+  el.innerHTML = `<div class="adm2-boxhead"><h2 class="display">Parcours client</h2><small class="muted">30 derniers jours</small></div>
+    ${f.visit ? `<p class="fn-conv">Taux de conversion <b>${conv.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %</b><small>visites → commandes · moyenne e-commerce : 1 à 3 %</small></p>
+    <ol class="fn">${STEPS.map(([k, l], i) => { const v = f[k], prev = i ? f[STEPS[i - 1][0]] : 0; return `<li><span class="fn-l">${l}</span><span class="fn-bar"><i style="width:${Math.max(1.5, (v / top) * 100).toFixed(1)}%"></i></span><b>${nb(v)}</b>${i ? `<small>${prev ? Math.round((v / prev) * 100) : 0} %</small>` : "<small></small>"}</li>`; }).join("")}</ol>
+    <p class="at-hint">${(() => { const r = (a, b) => (f[b] ? f[a] / f[b] : 1); const w = [["product", "visit", "Beaucoup de visiteurs ne vont pas jusqu'aux fiches produit : mets un produit phare et une offre dès l'accueil."], ["cart", "product", "Les fiches sont vues mais peu ajoutées au panier : photos, prix par lot et avis font la différence."], ["checkout", "cart", "Des paniers ne passent pas à la commande : la livraison offerte et le rappel des paniers aident."], ["order", "checkout", "Des commandes commencées ne sont pas validées : vérifie que le formulaire est simple et rassurant."]]; return w.sort((a, b) => r(a[0], a[1]) - r(b[0], b[1]))[0][2]; })()}</p>`
+    : `<p class="at-hint">Les visites seront comptées dès la mise en ligne (compteurs anonymes, sans cookie). Ton propre appareil n'est jamais compté.</p>`}`;
+}
+
+/* Paniers laissés en route par des clients qui ont accepté d'être recontactés */
+async function paniersTab() {
+  const list = await SHOPX.pendingCarts();
+  const el = document.getElementById("ctabBody");
+  if (!el) return;
+  el.innerHTML = `<p class="at-hint">Clients qui ont rempli leur e-mail, coché « recevoir les offres », puis n'ont pas validé. Une relance polie dans les 24 h récupère souvent la vente. Le panier disparaît tout seul s'ils commandent.</p>
+    ${list.length ? `<ul class="adm2-list mt">${list.map((c) => { const d = c.data || {}; const phone = String(d.phone || "").replace(/\D/g, "").replace(/^0/, "33");
+      const msg = `Bonjour ${d.firstName || ""}, c'est OrDesNuits. Votre sélection vous attend toujours (${(d.lines || []).map((l) => `${l.qty} × ${l.name}`).join(", ")}). Une question avant de commander ? Je reste disponible ✦`;
+      return `<li class="adm2-row"><div class="grow"><b>${esc(d.firstName || c.email)}</b><small>${esc(c.email)} · ${A.ago(c.updated_at)} · ${esc(d.total || "")}</small><small>${(d.lines || []).map((l) => `${l.qty} × ${esc(l.name)}`).join(" · ")}</small></div>
+        <div class="at-row">${phone ? `<a class="adm-btn ghost" target="_blank" rel="noopener" href="https://wa.me/${phone}?text=${encodeURIComponent(msg)}">WhatsApp</a>` : ""}<a class="adm-btn ghost" href="mailto:${esc(c.email)}?subject=${encodeURIComponent("Votre sélection OrDesNuits")}&body=${encodeURIComponent(msg)}">E-mail</a><button type="button" class="adm-btn ghost" data-dropcart="${esc(c.email)}">✕</button></div></li>`; }).join("")}</ul>`
+    : `<div class="adm2-empty">${IC.clients}<p>Aucun panier en attente.</p></div>`}`;
+  el.onclick = async (e) => { const b = e.target.closest("[data-dropcart]"); if (b) { await SHOPX.dropCart(b.dataset.dropcart); paniersTab(); } };
+}
+/* Avis : rien n'est publié sans ton accord */
+async function avisTab() {
+  const list = await SHOPX.allReviews();
+  const el = document.getElementById("ctabBody");
+  if (!el) return;
+  const st = (n) => "★".repeat(n) + "☆".repeat(5 - n);
+  el.innerHTML = `<p class="at-hint">Seuls les clients dont la commande est livrée peuvent laisser un avis. Rien n'est publié sans ta validation. Ne modifie jamais le texte d'un client, et n'écris jamais d'avis toi-même : c'est interdit.</p>
+    ${list.length ? `<ul class="adm2-list mt">${list.map((r) => `<li class="adm2-row ${r.approved ? "" : "off"}"><div class="grow"><b><span class="stars">${st(r.rating)}</span> ${esc(r.name || "—")}</b><small>${esc(store.find(r.product_id)?.name || r.product_id || "")} · commande ${esc(r.order_id)} · ${A.ago(r.created_at)}</small><p class="rv-body">${esc(r.body)}</p></div>
+      <div class="at-row">${r.approved ? `<button type="button" class="adm-btn ghost" data-rv="${r.id}" data-ok="0">Retirer</button>` : `<button type="button" class="adm-btn gold" data-rv="${r.id}" data-ok="1">Publier</button>`}<button type="button" class="adm-btn ghost" data-rv="${r.id}" data-ok="x">Supprimer</button></div></li>`).join("")}</ul>`
+    : `<div class="adm2-empty">${IC.clients}<p>Pas encore d'avis. Les clients livrés peuvent en laisser un depuis leur compte.</p></div>`}`;
+  el.onclick = async (e) => { const b = e.target.closest("[data-rv]"); if (!b) return; await SHOPX.moderate(Number(b.dataset.rv), b.dataset.ok === "x" ? null : b.dataset.ok === "1"); avisTab(); };
 }
 
 /* ---------- Comptabilité ---------- */
@@ -678,13 +929,42 @@ function compta() {
 function atelier() {
   shell(`
     <header class="adm2-head"><p class="eyebrow">Création</p><h1 class="display">L'Atelier</h1>
-      <p class="sub">Crée un visuel de promo pour Snapchat, une story ou une bannière : texte, logo, badges, cadre doré.</p></header>
+      <p class="sub">Tes pubs de A à Z : visuels, vidéos, retouches. Tout se fait ici, sur ton téléphone.</p></header>
+    <section class="at-hub">
+      <button type="button" class="hub" data-ads><i>✦</i><b>Studio pub</b><span>Une pub prête à poster en 1 minute : accroche, visuel story, carré ou feed, légende.</span></button>
+      <button type="button" class="hub" data-video><i>▶︎</i><b>Atelier vidéo</b><span>Couper un clip, format story, logo, textes dorés, export prêt pour Snap et TikTok.</span></button>
+      <button type="button" class="hub" data-eraser><i>⌫</i><b>Effaceur</b><span>Passe le doigt sur un texte ou un défaut d'une photo : il disparaît.</span></button>
+    </section>
+    <h2 class="display mini-title">Visuel libre</h2>
     <section class="adm2-actions">
       <button type="button" class="action" data-free="4:5"><b>4:5</b><span>Publication</span></button>
       <button type="button" class="action" data-free="1:1"><b>1:1</b><span>Carré</span></button>
       <button type="button" class="action" data-free="16:9"><b>16:9</b><span>Bannière</span></button>
     </section>
     <div id="freeOut"></div>`);
+}
+
+/* ---------- Croissance (conseiller) ---------- */
+function croissance() {
+  shell(`<div id="growthRoot"></div>`);
+  growth(document.getElementById("growthRoot"), { products: store.products() });
+}
+
+/* ---------- QG : la console façon jeu de stratégie ---------- */
+function qg() {
+  const products = store.products();
+  shell(`${demoBanner()}<div id="qgRoot"></div>`);
+  QG.qgView(document.getElementById("qgRoot"), { products, insights: A.insights(A.compute("30", products), products) });
+  QG.startTickers(document.getElementById("qgRoot"));
+  QG.checkRankUp(QG.state(products));
+}
+
+/* ---------- Affiliés (réseau, cote, relevés) ---------- */
+function affilies() {
+  shell(`<div id="affRoot"></div>`);
+  let target = 0;
+  try { target = growthTeaser(store.products()).safe || 0; } catch {}
+  affView(document.getElementById("affRoot"), { costTarget: target });
 }
 
 /* ---------- Réglages ---------- */
@@ -695,7 +975,7 @@ function reglages() {
     <header class="adm2-head"><p class="eyebrow">Coffre</p><h1 class="display">Réglages</h1></header>
     <section class="adm2-box">
       <h2 class="display">Données de démonstration</h2>
-      <p>Remplis le tableau de bord avec 140 commandes fictives (pays, régions, clients) pour voir toutes les analyses fonctionner. Elles sont marquées « démo » et se retirent en un geste.</p>
+      <p>Remplis le tableau de bord avec 6 mois d'activité fictive en croissance, jusqu'à environ 50 000 € par mois (pays, régions, clients, affiliés) pour voir toutes les analyses fonctionner. Elles sont marquées « démo » et se retirent en un geste.</p>
       <div class="at-row wrap">${hasDemo() ? `<button type="button" class="adm-btn danger" data-cleardemo>Retirer les données de démo</button>` : `<button type="button" class="adm-btn gold" data-seed>Charger les données de démo</button>`}</div>
     </section>
     <section class="adm2-box">
@@ -709,6 +989,27 @@ function reglages() {
         <label class="adm-btn ghost">Importer un catalogue<input type="file" accept="application/json,.json" id="imp" hidden></label>
       </div>
       <p class="at-hint">${BACKEND_MODE === "local" ? "Pour publier tes produits avant Supabase : exporte, puis remplace <code>data/catalogue.json</code> sur GitHub." : "L'export sert de sauvegarde. L'import ajoute ou met à jour les produits du fichier dans la base."}</p>
+    </section>
+    <section class="adm2-box">
+      <h2 class="display">Mode local du site</h2>
+      <p class="at-hint">Navigue sur ta boutique comme un client, mais en local sur ce téléphone : le catalogue en ligne est copié sur l'appareil, et tes commandes de test, comptes et avis restent ici. Rien n'est envoyé à la base, tes vrais clients ne voient rien. Le Salon privé reste en ligne.</p>
+      ${store.REMOTE ? `<div class="at-row wrap"><button type="button" class="adm-btn gold" data-localmode="on">Ouvrir le site en mode local</button>${localStorage.getItem("odn.localmode") === "1" ? `<button type="button" class="adm-btn ghost" data-localmode="off">Revenir au site en ligne</button>` : ""}</div>` : `<p class="at-hint">Tu es en aperçu : le site tourne déjà entièrement en local.</p>`}
+    </section>
+    <section class="adm2-box" id="shopCfg">
+      <h2 class="display">Livraison et cadeau</h2>
+      <p class="at-hint">La livraison devient offerte à partir du montant choisi : c'est le meilleur levier pour faire monter le panier moyen. Mets 0 en frais pour une livraison toujours offerte.</p>
+      <div class="fld-row three">
+        <label class="fld"><span>Frais de livraison (€)</span><input class="adm-input" id="sc-ship" inputmode="decimal"></label>
+        <label class="fld"><span>Offerte dès (€)</span><input class="adm-input" id="sc-free" inputmode="decimal"></label>
+        <label class="fld"><span>Emballage cadeau (€)</span><input class="adm-input" id="sc-gift" inputmode="decimal"></label>
+      </div>
+      <button type="button" class="adm-btn gold mt" data-saveshop>Enregistrer</button>
+    </section>
+    <section class="adm2-box">
+      <h2 class="display">Dossier investisseur</h2>
+      <p class="at-hint">Une page privée, à jour en direct, avec tes vrais chiffres (CA mois par mois, clients, fidélité, pays, réseau d'affiliés). Elle ne montre aucun nom ni aucune adresse. Toute personne qui a le lien peut la voir : régénère-le pour couper l'accès.</p>
+      <div class="aff-link" id="invLink"><code>—</code></div>
+      <div class="at-row wrap mt"><button type="button" class="adm-btn gold" data-invgen>${store.REMOTE ? "Créer un nouveau lien" : "Ouvrir l'aperçu"}</button><button type="button" class="adm-btn ghost" data-invcopy>Copier le lien</button></div>
     </section>
     <section class="adm2-box">
       <h2 class="display">Sécurité</h2>
@@ -725,10 +1026,54 @@ function reglages() {
     </section>`}`);
 }
 
+/* Mode local : copie du catalogue, des réglages et des codes affiliés sur l'appareil */
+async function setLocalMode(on) {
+  if (!on) { localStorage.removeItem("odn.localmode"); toast("Site de nouveau en ligne"); route(true); return; }
+  try {
+    const products = structuredClone(store.products());
+    const { categoriesFrom } = await import("../core/catalogue.js");
+    localStorage.setItem("odn.catalogue.v1", JSON.stringify({ categories: categoriesFrom(products), products }));
+    const c = await SHOPX.settings();
+    localStorage.setItem("odn.shop", JSON.stringify(c));
+    localStorage.setItem("odn.affiliates", JSON.stringify(AFF.all()));
+    localStorage.setItem("odn.localmode", "1");
+    open("maisons.html", "_blank");
+    route(true);
+  } catch (x) { toast("Mode local impossible : " + (x?.message || x)); }
+}
+
+/* Réglages boutique + lien investisseur */
+async function fillReglages() {
+  const c = await SHOPX.settings();
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = String(v).replace(".", ","); };
+  set("sc-ship", c.shipFee); set("sc-free", c.freeFrom); set("sc-gift", c.giftFee);
+  const code = document.querySelector("#invLink code");
+  if (!code) return;
+  if (!store.REMOTE) { code.textContent = new URL("dossier.html#demo", location.href).href; return; }
+  try { const rows = await rest("settings", "key=eq.investor&select=value"); const tok = rows[0]?.value?.token; code.textContent = tok ? new URL("dossier.html#k=" + tok, location.href).href : "Aucun lien pour l'instant"; } catch { code.textContent = "Hors ligne"; }
+}
+async function saveShopCfg() {
+  const n = (id) => Math.max(0, Number(String(document.getElementById(id).value).replace(",", ".")) || 0);
+  const v = { ship_fee: n("sc-ship"), free_from: n("sc-free"), gift_fee: n("sc-gift") };
+  try {
+    if (store.REMOTE) await rest("settings", "on_conflict=key", { method: "POST", body: { key: "shop", value: v }, headers: { Prefer: "resolution=merge-duplicates,return=minimal" } });
+    else localStorage.setItem("odn.shop", JSON.stringify({ shipFee: v.ship_fee, freeFrom: v.free_from, giftFee: v.gift_fee }));
+    toast("Réglages enregistrés");
+  } catch { toast("Enregistrement impossible (connexion ?)"); }
+}
+async function newInvestorLink() {
+  if (!store.REMOTE) { open("dossier.html#demo", "_blank"); return; }
+  const tok = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  try { await rest("settings", "on_conflict=key", { method: "POST", body: { key: "investor", value: { token: tok } }, headers: { Prefer: "resolution=merge-duplicates,return=minimal" } }); toast("Nouveau lien créé, l'ancien ne marche plus"); fillReglages(); }
+  catch { toast("Impossible (connexion ?)"); }
+}
+
 /* ---------- Navigation ---------- */
 function route(keepScroll = false) {
   const y = window.scrollY;
-  ({ salon, commandes, produits, clients, compta, atelier, reglages }[view] || salon)();
+  ({ qg, salon, commandes, produits, clients, croissance, affilies, compta, atelier, reglages }[view] || qg)();
+  if (view === "reglages") fillReglages();
+  if (view === "salon") paintFunnel();
   window.scrollTo({ top: keepScroll ? y : 0 });
 }
 
@@ -738,20 +1083,31 @@ function startPolling() {
   if (!store.REMOTE || poll) return;
   poll = setInterval(async () => {
     if (document.hidden) return;
+    if (!OFF.online()) return;
+    if (OFF.queue().some((o) => !o.failed)) await syncNow();
     const before = allOrders().filter((o) => o.status === "nouvelle").length;
-    try { await Promise.all([loadAdminData(), store.reload()]); } catch { return; }
+    try { await Promise.all([loadAdminData(), store.reload()]); saveAdminSnap(); } catch { return; }
     const after = allOrders().filter((o) => o.status === "nouvelle").length;
     if (after > before) toast(after - before > 1 ? `${after - before} nouvelles commandes` : "Nouvelle commande !");
     const busy = document.querySelector(".adm-editor, .scrim, .atelier") || app.contains(document.activeElement) && document.activeElement.matches("input, textarea, select");
-    if (!busy && ["salon", "commandes", "clients", "produits"].includes(view)) route(true);
+    if (!busy && ["qg", "salon", "commandes", "clients", "produits"].includes(view)) route(true);
   }, 30000);
 }
 
 app.addEventListener("click", async (e) => {
-  const b = e.target.closest("button, li[data-edit], li[data-order], li[data-view]");
+  const b = e.target.closest("button, li[data-edit], li[data-order], li[data-view], article[data-view]");
   if (!b) return;
   const d = b.dataset;
   if (b.hasAttribute("data-more")) { moreSheet(); return; }
+  if (b.hasAttribute("data-sync")) { syncNow(); return; }
+  if (b.hasAttribute("data-ads")) { adStudio({ products: store.products() }); return; }
+  if (b.hasAttribute("data-video")) { openVideo(); return; }
+  if (b.hasAttribute("data-eraser")) { openEraser(); return; }
+  if (b.hasAttribute("data-failed")) {
+    const f = OFF.state().failed;
+    if (await confirmSheet("Modifs refusées par le serveur", f.map((o) => `• ${o.type} ${o.p?.name || o.id || ""} : ${o.failed}`).join("\n") + "\n\nRéessayer ? (Annuler = les supprimer)", "Réessayer")) { OFF.retryFailed(); syncNow(); } else { OFF.dropFailed(); }
+    return;
+  }
   if (d.view) { view = d.view; if (d.of) ofilter = d.of; filter.q = ""; route(); return; }
   if (d.period) { period = d.period; salon(); return; }
   if (d.stock) {
@@ -771,6 +1127,10 @@ app.addEventListener("click", async (e) => {
   if (b.hasAttribute("data-wa")) { whatsappEntry(); return; }
   if (d.shopf) { filter.shop = d.shopf; produits(); return; }
   if (d.ctab) { ctab = d.ctab; filter.q = ""; clients(); return; }
+  if (b.hasAttribute("data-saveshop")) { saveShopCfg(); return; }
+  if (b.dataset.localmode) { await setLocalMode(b.dataset.localmode === "on"); return; }
+  if (b.hasAttribute("data-invgen")) { newInvestorLink(); return; }
+  if (b.hasAttribute("data-invcopy")) { try { await navigator.clipboard.writeText(document.querySelector("#invLink code").textContent); toast("Lien copié"); } catch {} return; }
   if (b.hasAttribute("data-copyemails") || b.hasAttribute("data-csvemails")) {
     const subs = subscribers(), users = customers();
     const emails = [...new Set([...subs.map((s) => s.email), ...users.filter((u) => u.optin).map((u) => u.email)])];
@@ -799,12 +1159,12 @@ app.addEventListener("click", async (e) => {
   }
   if (b.hasAttribute("data-seed")) {
     b.disabled = true; b.textContent = "Chargement…";
-    try { await seedDemo(store.products()); } catch { toast("Chargement impossible"); reglages(); return; }
-    toast("Données de démo chargées"); view = "salon"; route(); return;
+    try { await seedDemo(store.products()); if (!store.REMOTE) seedDemoEvents(allOrders().filter((o) => o.demo)); } catch (x) { toast("Chargement impossible : " + (x?.message || x)); reglages(); return; }
+    toast("Données de démo chargées"); view = "qg"; route(); return;
   }
   if (b.hasAttribute("data-cleardemo")) {
     if (await confirmSheet("Retirer la démo ?", "Les commandes, comptes et e-mails fictifs seront supprimés. Tes vraies données restent.", "Retirer")) {
-      try { await clearDemo(); } catch { toast("Action impossible"); return; }
+      try { await clearDemo(); if (!store.REMOTE) localStorage.removeItem("odn.events"); } catch { toast("Action impossible"); return; }
       toast("Démo retirée"); reglages();
     }
     return;
@@ -824,18 +1184,43 @@ app.addEventListener("change", async (e) => {
   }
 });
 
+function mountSync() {}
 async function start() {
   await initI18n("fr");
   document.documentElement.lang = "fr"; document.documentElement.dir = "ltr";
+  OFF.installApp();
   if (store.REMOTE) {
     if (!(await gate())) return;
-    app.innerHTML = `<section class="adm-gate"><div class="seal"><img src="assets/img/logo.webp" alt=""></div><p>Ouverture du salon…</p></section>`;
-    try { await Promise.all([store.load(), loadAdminData()]); }
-    catch { app.innerHTML = `<section class="adm-gate"><h1 class="display">Connexion impossible</h1><p>Vérifie ta connexion internet, puis recharge la page.</p></section>`; return; }
+    app.innerHTML = `<section class="adm-gate nuit-wrap">${scene("Bienvenue à bord, capitaine.", "adm")}</section>`;
+    const minShow = sessionStorage.getItem("odn.admnuit") ? 0 : 3600;
+    sessionStorage.setItem("odn.admnuit", "1");
+    const t0 = Date.now();
+    try {
+      if (!OFF.online()) throw Object.assign(new Error("network"), { status: 0 });
+      await Promise.all([store.load(), loadAdminData()]);
+      saveAdminSnap();
+      await AFF.load().catch(() => {});
+    } catch (x) {
+      const snap = OFF.loadSnap();
+      if (!OFF.isNetErr(x) || !snap?.admin) { app.innerHTML = `<section class="adm-gate"><h1 class="display">Connexion impossible</h1><p>Ouvre le Salon une première fois avec internet : il sera ensuite disponible hors connexion.</p></section>`; return; }
+      restoreAdmin(snap.admin);
+      await store.load();
+      await AFF.load().catch(() => {});
+    }
+    await new Promise((ok) => setTimeout(ok, Math.max(0, minShow - (Date.now() - t0))));
     route(); startPolling();
+    if (!mountSync.done) { mountSync.done = true; OFF.onChange(paintSync); OFF.watch(() => { paintSync(); syncNow(); }); }
+    syncNow();
     return;
   }
   await store.load();
-  if (await gate()) route();
+  await AFF.load();
+  if (!(await gate())) return;
+  if (!sessionStorage.getItem("odn.admnuit")) {
+    sessionStorage.setItem("odn.admnuit", "1");
+    app.innerHTML = `<section class="adm-gate nuit-wrap">${scene("Bienvenue à bord, capitaine.", "adm")}</section>`;
+    await new Promise((ok) => setTimeout(ok, 3600));
+  }
+  route();
 }
 start();

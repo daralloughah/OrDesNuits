@@ -125,6 +125,7 @@ export async function createOrder(order) {
       p: {
         customer: order.customer, shipping: order.shipping, lang: order.lang, display: order.display,
         lines: order.lines.map((l) => ({ id: l.id, qty: l.qty })),
+        promo: order.promo || null, gift: !!order.gift,
       },
     });
   } catch (x) {
@@ -137,6 +138,7 @@ export async function createOrder(order) {
     ...order, id: res.id, at: new Date().toISOString(), status: "nouvelle", source: "site",
     lines: res.lines.map((l) => ({ ...l, qty: num(l.qty), unitEur: num(l.unitEur) })),
     subtotalEur: num(res.subtotalEur), discountEur: num(res.discountEur), totalEur: num(res.totalEur),
+    display: { ...order.display, shipEur: num(res.shipEur), giftEur: num(res.giftEur), promoEur: num(res.promoEur) },
   };
 }
 
@@ -245,3 +247,16 @@ export async function isAdmin() {
   if (!getSession()) return false;
   try { return (await rpc("is_admin")) === true; } catch { return false; }
 }
+
+/* ---------- Hors connexion (Salon) ---------- */
+export const snapshotAdmin = () => structuredClone(cache);
+export function restoreAdmin(c) {
+  if (!c) return;
+  cache.orders = c.orders || []; cache.users = c.users || []; cache.subs = c.subs || [];
+}
+export function patchOrderLocal(id, patch) {
+  const o = cache.orders.find((x) => x.id === id);
+  if (o) Object.assign(o, patch);
+  return o;
+}
+export function addOrderLocal(o) { cache.orders.unshift(o); return o; }

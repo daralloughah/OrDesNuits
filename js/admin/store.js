@@ -7,6 +7,7 @@
 import { DATA_URL } from "../config.js";
 import { LOCAL_KEY, DEFAULT_CATEGORIES, productFromRow, productToRow, categoriesFrom } from "../core/catalogue.js";
 import { enabled, rest, rpc, upload } from "../core/sb.js";
+import * as OFF from "./offline.js";
 export const REMOTE = enabled;
 
 const SALES_KEY = "odn.sales.v1";
@@ -34,14 +35,42 @@ export async function load() {
 /* En ligne : relit les produits (y compris masqués) et les coûts d'achat */
 export async function reload() {
   if (!REMOTE) { db = null; return load(); }
-  const [rows, costs] = await Promise.all([
+  if (!OFF.online()) return fromSnap();
+  let rows, costs;
+  try {
+    [rows, costs] = await Promise.all([
     rest("products", "select=*&order=sort.asc,updated_at.desc&limit=2000"),
     rest("product_costs", "select=*&limit=2000"),
   ]);
+  } catch (x) { if (OFF.isNetErr(x)) return fromSnap(); throw x; }
   const cost = Object.fromEntries(costs.map((c) => [c.product_id, c.cost == null ? null : Number(c.cost)]));
   const products = rows.map((r) => ({ ...productFromRow(r), cost: cost[r.id] ?? null }));
   db = { categories: categoriesFrom(products), products };
+  replayLocally();
+  OFF.saveSnap({ products: db.products });
   return db;
+}
+
+/* Hors ligne : on repart de l'instantané, plus les modifs en attente */
+function fromSnap() {
+  const snap = OFF.loadSnap();
+  if (!snap?.products) { if (db) return db; throw Object.assign(new Error("network"), { status: 0 }); }
+  db = { categories: categoriesFrom(snap.products), products: structuredClone(snap.products) };
+  replayLocally();
+  return db;
+}
+/* Les modifs pas encore envoyées restent visibles */
+function replayLocally() {
+  for (const op of OFF.queue()) {
+    if (op.failed) continue;
+    if (op.type === "upsert") { const i = db.products.findIndex((x) => x.id === op.p.id); if (i >= 0) db.products[i] = op.p; else db.products.unshift(op.p); }
+    if (op.type === "remove") db.products = db.products.filter((x) => x.id !== op.id);
+    if (op.type === "stock") { const x = db.products.find((y) => y.id === op.id); if (x) x.stock = Math.max(0, (x.stock || 0) + op.delta); }
+  }
+}
+function applyLocal(p) {
+  const i = db.products.findIndex((x) => x.id === p.id);
+  if (i >= 0) db.products[i] = p; else db.products.unshift(p);
 }
 
 export const save = () => (REMOTE ? true : write(LOCAL_KEY, db));
@@ -64,14 +93,30 @@ async function pushPhoto(src, id) {
 }
 
 /* Enregistre un produit. Renvoie true si c'est bon. */
+async function pushProduct(p) {
+  p.img = await pushPhoto(p.img, p.id);
+  p.gallery = await Promise.all((p.gallery || []).map((g) => pushPhoto(g, p.id)));
+  await rest("products", "on_conflict=id", { method: "POST", body: productToRow(p), headers: { Prefer: "resolution=merge-duplicates,return=minimal" } });
+  await rest("product_costs", "on_conflict=product_id", { method: "POST", body: { product_id: p.id, cost: p.cost ?? null }, headers: { Prefer: "resolution=merge-duplicates,return=minimal" } });
+  return p;
+}
+
+/* Rejoue une modif de la file d'attente (appelé à la synchro) */
+export async function replay(op) {
+  if (op.type === "upsert") { const p = await pushProduct(structuredClone(op.p)); applyLocal(p); }
+  if (op.type === "remove") await rest("products", `id=eq.${encodeURIComponent(op.id)}`, { method: "DELETE" });
+  if (op.type === "stock") await rpc("admin_adjust_stock", { p_id: op.id, p_delta: op.delta });
+}
+
 export async function upsert(p) {
   if (REMOTE) {
-    try {
-      p.img = await pushPhoto(p.img, p.id);
-      p.gallery = await Promise.all((p.gallery || []).map((g) => pushPhoto(g, p.id)));
-      await rest("products", "on_conflict=id", { method: "POST", body: productToRow(p), headers: { Prefer: "resolution=merge-duplicates,return=minimal" } });
-      await rest("product_costs", "on_conflict=product_id", { method: "POST", body: { product_id: p.id, cost: p.cost ?? null }, headers: { Prefer: "resolution=merge-duplicates,return=minimal" } });
-    } catch (x) { console.warn(x); return false; }
+    const later = () => { applyLocal(p); return OFF.enqueue({ type: "upsert", p: structuredClone(p) }) ? "queued" : false; };
+    if (!OFF.online()) return later();
+    try { await pushProduct(p); }
+    catch (x) { if (OFF.isNetErr(x)) return later(); console.warn(x); return false; }
+    applyLocal(p);
+    OFF.saveSnap({ products: db.products });
+    return true;
   }
   const i = db.products.findIndex((x) => x.id === p.id);
   if (i >= 0) db.products[i] = p; else db.products.unshift(p);
@@ -80,8 +125,8 @@ export async function upsert(p) {
 
 export async function remove(id) {
   if (REMOTE) {
-    try { await rest("products", `id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }); }
-    catch { return false; }
+    try { if (!OFF.online()) throw Object.assign(new Error("network"), { status: 0 }); await rest("products", `id=eq.${encodeURIComponent(id)}`, { method: "DELETE" }); }
+    catch (x) { if (!OFF.isNetErr(x)) return false; OFF.enqueue({ type: "remove", id }); }
   }
   db.products = db.products.filter((p) => p.id !== id);
   return REMOTE ? true : save();
@@ -92,8 +137,15 @@ export async function adjustStock(id, delta) {
   const p = find(id);
   if (!p) return;
   if (REMOTE) {
-    const n = await rpc("admin_adjust_stock", { p_id: id, p_delta: delta });
-    p.stock = Number(n);
+    try {
+      if (!OFF.online()) throw Object.assign(new Error("network"), { status: 0 });
+      const n = await rpc("admin_adjust_stock", { p_id: id, p_delta: delta });
+      p.stock = Number(n);
+    } catch (x) {
+      if (!OFF.isNetErr(x)) throw x;
+      OFF.enqueue({ type: "stock", id, delta });
+      p.stock = Math.max(0, (p.stock || 0) + delta);
+    }
     return p.stock;
   }
   p.stock = Math.max(0, (p.stock || 0) + delta);

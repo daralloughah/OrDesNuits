@@ -103,3 +103,11 @@ Mode d'emploi pas à pas : **`supabase/LISEZMOI.md`**.
 - Salon privé : connexion sécurisée du gérant, mise à jour automatique toutes les 30 secondes, alerte « Nouvelle commande ! », stock décompté par le serveur à la confirmation.
 - Le Concierge répond aux questions libres grâce à Claude (fonction `supabase/functions/concierge`), avec repli WhatsApp.
 - `js/core/backend.js` choisit tout seul : en ligne si `js/config.js` contient l'adresse Supabase, sinon mode aperçu sur l'appareil.
+
+## Version 1.6 · 1.7
+
+- Fiche produit : formats et lots (1, 2, 3, 6, 12, 24…) avec économie calculée toute seule, rituel, composition, mises en garde.
+- Espace revendeurs : panier mélangé, remise par montant total (grille tirée du produit « référence »).
+- 3 écrins au choix (Velours, Coffret, Galerie), mode discret, barre d'achat collante.
+- Salon privé : fonctionne hors connexion (les modifs partent au retour du réseau), Croissance (conseiller budget pub), Studio pub, Atelier vidéo, Effaceur.
+- **Avant de publier la v1.6/1.7 : lancer `supabase/v1.6.sql`** (colonne `extra`, prix par lots côté serveur).

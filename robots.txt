@@ -1,2 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
+Disallow: /dossier.html
+Disallow: /partenaire.html

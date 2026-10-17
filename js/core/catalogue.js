@@ -24,8 +24,10 @@ export function productFromRow(r) {
     price: n(r.price), promo: n(r.promo), frame: r.frame, offer: r.offer, pinned: r.pinned, active: r.active,
     stock: r.stock, lowAt: r.low_at, sold: r.sold, img: r.img, gallery: r.gallery || [], fit: r.fit,
     desc: r.descr || {}, sort: r.sort,
+    ...(r.extra || {}), // formats, fiche détaillée, revendeurs
   };
 }
+const EXTRA = ["tiers", "unitName", "facts", "usage", "compo", "warn", "wholesale"];
 export function productToRow(p) {
   return {
     id: p.id, shop: p.shop, category: p.category, type: p.type || null, name: p.name,
@@ -33,6 +35,7 @@ export function productToRow(p) {
     offer: !!p.offer, pinned: !!p.pinned, active: p.active !== false, stock: Math.max(0, Math.round(p.stock || 0)),
     low_at: p.lowAt ?? 5, sold: p.sold || 0, img: p.img || null, gallery: p.gallery || [], fit: p.fit || "cover",
     descr: p.desc || {}, sort: p.sort ?? 0, updated_at: new Date().toISOString(),
+    extra: Object.fromEntries(EXTRA.filter((k) => p[k] != null).map((k) => [k, p[k]])),
   };
 }
 export function categoriesFrom(products) {
@@ -60,11 +63,14 @@ export async function loadCatalogue() {
         return (cache = { categories: categoriesFrom(products), products });
       }
     } catch {}
-    return (cache = await fromJson()); // base vide ou injoignable : catalogue publié
+    cache = await fromJson(); // base vide ou injoignable : catalogue publié
+    cache.products.forEach((p, i) => { p.sort ??= i; });
+    return cache;
   }
   const local = localCatalogue();
-  if (local?.products) return (cache = local);
-  return (cache = await fromJson());
+  cache = local?.products ? local : await fromJson();
+  cache.products.forEach((p, i) => { p.sort ??= i; });
+  return cache;
 }
 
 /* Stock : épuisé, ou presque */

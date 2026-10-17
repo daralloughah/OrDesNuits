@@ -2,6 +2,8 @@
 import { LANGS } from "../config.js";
 import { initI18n, setLang, currentLang, t, translateDom } from "../core/i18n.js";
 import { mountFx } from "../ui/fx.js";
+import { intro, sheen } from "../ui/luxe.js";
+import { watchErrors } from "../ui/notify.js";
 
 const HELLO = { fr: "Bienvenue", "en-US": "Welcome", "en-GB": "Welcome", ar: "أهلاً بك", es: "Bienvenido", pt: "Bem-vindo", ru: "Добро пожаловать", de: "Willkommen", zh: "欢迎光临", ja: "ようこそ", ko: "환영합니다" };
 
@@ -42,4 +44,6 @@ document.getElementById("continue").addEventListener("click", async () => {
 });
 
 mountFx();
-render();
+watchErrors();
+sheen();
+initI18n().then(() => { intro(); render(); });

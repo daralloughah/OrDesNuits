@@ -43,3 +43,9 @@ export const unsubscribe = (e) => B.unsubscribe(e);
 export const seedDemo = (p) => B.seedDemo(p);
 export const clearDemo = () => B.clearDemo();
 export const isAdmin = () => (enabled ? R.isAdmin() : Promise.resolve(false));
+
+/* Salon hors connexion */
+export const snapshotAdmin = () => (enabled ? R.snapshotAdmin() : null);
+export const restoreAdmin = (c) => (enabled ? R.restoreAdmin(c) : null);
+export const patchOrderLocal = (id, p) => (enabled ? R.patchOrderLocal(id, p) : L.updateOrder(id, p));
+export const addOrderLocal = (o) => (enabled ? R.addOrderLocal(o) : o);

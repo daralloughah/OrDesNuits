@@ -8,8 +8,9 @@ export const CONTACT = {
   snapchat: "ordesnuits",    // ton pseudo Snapchat
 };
 
-/* Offre de lancement : 3 achetés, le 4e offert (le moins cher des articles éligibles) */
-export const OFFER = { active: true, buy: 3 };
+/* Offre 3 achetés, le 4e offert : désactivée (remplacée par les prix par lots
+   réglés produit par produit dans le Salon privé). Mettre true pour la réactiver. */
+export const OFFER = { active: false, buy: 3 };
 
 /* Langues proposées. `cur` = devise affichée pour cette langue. */
 export const LANGS = [
@@ -44,3 +45,11 @@ export const SUPABASE = {
   url: "https://vmhqkdsoasfnicxnhtnk.supabase.co",
   anonKey: "sb_publishable_AC3GvOcrNyKvv6_X6uS5eA_wxlcon9i",
 };
+
+/* Édition numérotée : les coffrets à partir de « min » pièces portent le numéro
+   de la commande (à reporter à la main sur le coffret). active: false pour retirer. */
+export const EDITION = { active: true, min: 24 };
+
+/* Boutique : livraison (offerte dès freeFrom €) et emballage cadeau.
+   En ligne, ce sont les valeurs du réglage « shop » de Supabase qui comptent. */
+export const SHOP = { shipFee: 5.90, freeFrom: 49, giftFee: 3.90 };

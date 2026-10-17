@@ -2,7 +2,7 @@
 import { initI18n, t, translateDom } from "../core/i18n.js";
 import { productsOf, packsOf, bestOf, categoriesOf } from "../core/catalogue.js";
 import { mountChrome, softImages, addToCart, esc } from "../ui/chrome.js";
-import { card, promises, ORN, enableTilt } from "../ui/card.js";
+import { card, promises, ORN, enableTilt, ornament } from "../ui/card.js";
 import { ICONS } from "../ui/icons.js";
 import { OFFER } from "../config.js";
 
@@ -25,6 +25,7 @@ async function render() {
       <div class="flex max-w-2xl flex-col gap-5">
         <p class="eyebrow m-0 reveal">OrDesNuits · <span data-i="collection"></span></p>
         <h1 class="display reveal d1" data-i="${shop === "lui" ? "him" : "her"}"></h1>
+        ${ornament("reveal d1")}
         <p class="m-0 max-w-md text-lg text-muted reveal d2" data-i="${shop}_sub"></p>
         <nav class="switch-shop self-start reveal d3" aria-label="Boutique">
           <a href="#lui" ${shop === "lui" ? 'aria-current="page"' : ""} data-i="him"></a>

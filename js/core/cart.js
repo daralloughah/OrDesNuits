@@ -2,7 +2,8 @@
 import { CONTACT, OFFER } from "../config.js";
 import { storage, t } from "./i18n.js";
 import { convert, format } from "./money.js";
-import { loadCatalogue, finalPrice } from "./catalogue.js";
+import { loadCatalogue } from "./catalogue.js";
+import { bestCost } from "./pricing.js";
 
 const KEY = "odn.cart";
 const listeners = new Set();
@@ -28,7 +29,10 @@ export async function summary() {
   const lines = Object.entries(items)
     .map(([id, q]) => {
       const p = products.find((x) => x.id === id);
-      return p && q > 0 ? { p, q, unit: convert(finalPrice(p)) } : null;
+      if (!p || q <= 0) return null;
+      const eur = bestCost(p, q);              // lots combinés au meilleur prix
+      const total = convert(eur);
+      return { p, q, eur, total, unit: total / q };
     })
     .filter(Boolean);
 
@@ -37,7 +41,7 @@ export async function summary() {
   const freeN = Math.floor(nElig / (OFFER.buy + 1));
   const units = eligible.flatMap((l) => Array(l.q).fill(l.unit)).sort((a, b) => a - b);
   const discount = units.slice(0, freeN).reduce((s, v) => s + v, 0);
-  const subtotal = lines.reduce((s, l) => s + l.unit * l.q, 0);
+  const subtotal = lines.reduce((s, l) => s + l.total, 0);
   const missing = nElig ? (OFFER.buy + 1 - (nElig % (OFFER.buy + 1))) % (OFFER.buy + 1) : 0;
 
   return { lines, nElig, freeN, missing, discount, subtotal, total: subtotal - discount, count: count() };
@@ -45,7 +49,7 @@ export async function summary() {
 
 /* Lien WhatsApp avec la commande déjà rédigée (en français pour toi) */
 export function whatsappLink(s) {
-  const rows = s.lines.map((l) => `• ${l.q} × ${l.p.name} (${format(l.unit)})`).join("\n");
+  const rows = s.lines.map((l) => `• ${l.q} × ${l.p.name} (${format(l.total)})`).join("\n");
   const msg =
     `Bonjour OrDesNuits, je souhaite commander :\n${rows}` +
     (s.discount ? `\nOffert (3+1) : −${format(s.discount)}` : "") +

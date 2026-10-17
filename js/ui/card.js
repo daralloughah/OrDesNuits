@@ -1,25 +1,22 @@
 /* =========================================================
-   L'écrin : carte produit en vitrine (arche, projecteur, piédestal)
+   La vitrine : carte produit en vitrine (arche, projecteur, piédestal)
    + ornements art déco
    ========================================================= */
 import { t } from "../core/i18n.js";
-import { price } from "../core/money.js";
+import { price, priceLux } from "../core/money.js";
 import { finalPrice, isSoldOut, isLow } from "../core/catalogue.js";
 import { OFFER } from "../config.js";
 import { ICONS } from "./icons.js";
 import { esc } from "../core/util.js";
+import { hasTiers, maxSaving, fromPer } from "../core/pricing.js";
 
 /* Petit ornement placé devant les sur-titres */
 export const ORN = `<svg class="orn" viewBox="0 0 46 12" aria-hidden="true"><path d="M0 6h16M30 6h16" stroke="currentColor" stroke-width=".8"/><path d="M23 1.2l4.2 2.4v4.8L23 10.8l-4.2-2.4V3.6z" fill="none" stroke="currentColor" stroke-width=".9"/><path d="M23 3.8c-1.2 1.7-1.2 2.9 0 3.6 1.2-.7 1.2-1.9 0-3.6z" fill="currentColor"/></svg>`;
 
-/* Grand ornement : filet · losange · alvéole · losange · filet */
-export const ornament = (cls = "") => `
-  <svg class="ornament ${cls}" viewBox="0 0 220 24" aria-hidden="true">
-    <path d="M0 12h86M134 12h86" stroke="currentColor" stroke-width=".8" opacity=".7"/>
-    <path d="M92 12l4-4 4 4-4 4zM120 12l4-4 4 4-4 4z" fill="currentColor" opacity=".7"/>
-    <path d="M110 3l7.8 4.5v9L110 21l-7.8-4.5v-9z" fill="none" stroke="currentColor" stroke-width="1"/>
-    <path d="M110 8.5c-2 3-2 5 0 6.3 2-1.3 2-3.3 0-6.3z" fill="currentColor"/>
-  </svg>`;
+/* Grand ornement : filet art déco doré avec l'abeille (image) */
+export const ornament = (cls = "") => `<span class="ornament orn-img ${cls}" aria-hidden="true"></span>`;
+/* Séparateur de section : l'abeille au centre, des filets d'or qui s'étirent */
+export const divider = (cls = "") => `<div class="orn-sep ${cls}" aria-hidden="true"><i></i><span class="orn-img"></span><i></i></div>`;
 
 const CREST = `<svg class="crest" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1l7.8 4.5v9L10 19l-7.8-4.5v-9z" fill="var(--color-night)" stroke="currentColor"/><path d="M10 6c-2 3-2 5 0 6.3 2-1.3 2-3.3 0-6.3z" fill="currentColor"/></svg>`;
 const PLINTH = `<svg class="plinth" viewBox="0 0 200 60" aria-hidden="true">
@@ -48,7 +45,7 @@ export function media(p, big = false, src) {
 
 export function priceHtml(p) {
   const f = finalPrice(p);
-  return f < p.price ? `<span>${price(f)}</span><s>${price(p.price)}</s>` : `<span>${price(p.price)}</span>`;
+  return f < p.price ? `<span class="lux-price">${priceLux(f)}</span><s>${price(p.price)}</s>` : `<span class="lux-price">${priceLux(p.price)}</span>`;
 }
 
 export function ribbon(p, isBest) {
@@ -67,16 +64,25 @@ export function stockNote(p) {
   return isLow(p) ? `<span class="low-stock"><i></i>${esc(t("stock_low", { n: p.stock }))}</span>` : "";
 }
 
+/* Coins art déco (utilisés par certains styles) */
+const CORNERS = `<span class="corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span>`;
+
 export function card(p, rank) {
   const href = `produit.html#${encodeURIComponent(p.id)}`;
+  const tiered = hasTiers(p);
+  const up = tiered ? maxSaving(p) : 0;
+  const no = String((Number(p.sort) || 0) + 1).padStart(2, "0");
   return `
   <article class="card f-${p.frame || "none"} ${isSoldOut(p) ? "is-out" : ""} reveal" data-tilt>
+    ${CORNERS}
     ${ribbon(p, !!rank)}${rank ? `<span class="rank" aria-hidden="true">${rank}</span>` : ""}
-    <a class="cover" href="${href}" aria-label="${esc(p.name)}">${media(p)}</a>
+    <a class="cover" href="${href}" aria-label="${esc(p.name)}">${media(p)}<span class="sheen" aria-hidden="true"></span><span class="plate" aria-hidden="true">N° ${no}</span>${up > 0 ? `<span class="upto">${esc(t("lots_soft"))}</span>` : ""}</a>
     <div class="info">
       <span class="cat">${esc(t("cat_" + p.category))}${p.offer && OFFER.active ? ` <b class="tag31">3+1</b>` : ""}</span>
       <h3><a href="${href}">${esc(p.name)}</a></h3>
+      <span class="rule" aria-hidden="true"></span>
       ${stockNote(p)}
+      ${tiered ? `<span class="from">${esc(t("from_per", { price: price(fromPer(p)) }))}</span>` : ""}
       <div class="row">
         <span class="price">${priceHtml(p)}</span>
         ${isSoldOut(p)
@@ -114,6 +120,6 @@ export function enableTilt(root = document) {
 
 export function promises() {
   const items = [["box", "p1_t", "p1"], ["clock", "p2_t", "p2"], ["globe32", "p3_t", "p3"], ["chat", "p4_t", "p4"]];
-  return `<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">${items.map(([i, h, p]) => `
+  return `${divider("mb-12")}<div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">${items.map(([i, h, p]) => `
     <div class="promise flex flex-col gap-2">${ICONS[i]}<h3>${esc(t(h))}</h3><p class="m-0 text-muted">${esc(t(p))}</p></div>`).join("")}</div>`;
 }

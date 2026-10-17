@@ -6,7 +6,17 @@
    ========================================================= */
 import { SUPABASE } from "../config.js";
 
-export const enabled = !!(SUPABASE.url && SUPABASE.anonKey);
+/* Mode local du gérant : sur SON appareil (gérant déjà connecté), le site
+   entier tourne en local (catalogue copié, commandes de test gardées sur
+   le téléphone, rien n'est envoyé). Le Salon privé, lui, reste en ligne. */
+export const localMode = (() => {
+  try {
+    if (/admin\.html$/.test(location.pathname)) return false;
+    return localStorage.getItem("odn.localmode") === "1" && !!localStorage.getItem("odn.admin.ok");
+  } catch { return false; }
+})();
+export const configured = !!(SUPABASE.url && SUPABASE.anonKey);
+export const enabled = configured && !localMode;
 const URL_ = String(SUPABASE.url || "").replace(/\/+$/, "");
 const KEY = SUPABASE.anonKey;
 const SKEY = "odn.sb.session";

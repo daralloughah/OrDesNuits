@@ -1,29 +1,757 @@
 {
-  "_note": "Catalogue de démonstration. Prix en euros. Sera remplacé par la base Supabase et géré depuis l'espace gérant.",
-  "categories": {
-    "lui": ["miel", "huile", "bougie", "gel"],
-    "elle": ["miel", "huile", "bougie", "soin"]
-  },
-  "products": [
-    { "id": "nuit-ambre", "shop": "lui", "category": "miel", "name": "Nuit d'Ambre", "price": 4.5, "promo": 3.9, "frame": "promo", "offer": true, "pinned": true, "sold": 184, "stock": 120, "img": null,
-      "desc": { "fr": "Un miel sombre aux reflets ambrés, en sachet de 10 g à glisser partout.", "en": "A dark, amber-toned honey in a 10 g sachet you can take anywhere." } },
-    { "id": "or-noir", "shop": "lui", "category": "miel", "name": "Or Noir", "price": 4.5, "frame": "none", "offer": true, "sold": 142, "stock": 90, "img": null,
-      "desc": { "fr": "Notes boisées et caramel brûlé. Sachet de 10 g.", "en": "Woody notes and burnt caramel. 10 g sachet." } },
-    { "id": "cedre-ambre", "shop": "lui", "category": "huile", "name": "Cèdre & Ambre", "price": 19.9, "frame": "new", "offer": false, "sold": 61, "stock": 40, "img": null,
-      "desc": { "fr": "Huile de massage au parfum de cèdre et d'ambre. 100 ml.", "en": "Massage oil scented with cedar and amber. 100 ml." } },
-    { "id": "tabac-blond", "shop": "lui", "category": "bougie", "name": "Tabac Blond", "price": 24.9, "frame": "none", "offer": false, "sold": 44, "stock": 30, "img": null,
-      "desc": { "fr": "Bougie de massage : sa cire fondue devient une huile tiède.", "en": "Massage candle: its melted wax turns into a warm oil." } },
-    { "id": "tempo", "shop": "lui", "category": "gel", "name": "Tempo", "price": 14.9, "frame": "none", "offer": false, "sold": 58, "stock": 7, "img": null,
-      "desc": { "fr": "Gel retardant. 15 ml.", "en": "Delay gel. 15 ml." } },
-    { "id": "tempo-intense", "shop": "lui", "category": "gel", "name": "Tempo Intense", "price": 17.9, "frame": "none", "offer": false, "sold": 23, "stock": 25, "img": null },
-
-    { "id": "rose-minuit", "shop": "elle", "category": "miel", "name": "Rose de Minuit", "price": 4.5, "frame": "fav", "offer": true, "pinned": true, "sold": 167, "stock": 110, "img": null,
-      "desc": { "fr": "Un miel clair aux notes de rose. Sachet de 10 g.", "en": "A light honey with notes of rose. 10 g sachet." } },
-    { "id": "fleur-oranger", "shop": "elle", "category": "miel", "name": "Fleur d'Oranger", "price": 4.5, "frame": "none", "offer": true, "sold": 96, "stock": 80, "img": null },
-    { "id": "satin", "shop": "elle", "category": "huile", "name": "Satin", "price": 21.9, "frame": "none", "offer": false, "sold": 52, "stock": 35, "img": null,
-      "desc": { "fr": "Huile sèche pour le corps, fini satiné. 100 ml.", "en": "Dry body oil with a satin finish. 100 ml." } },
-    { "id": "pivoine-vanille", "shop": "elle", "category": "bougie", "name": "Pivoine & Vanille", "price": 24.9, "frame": "new", "offer": false, "sold": 37, "stock": 30, "img": null },
-    { "id": "soie", "shop": "elle", "category": "soin", "name": "Soie", "price": 12.9, "frame": "none", "offer": false, "sold": 57, "stock": 50, "img": null,
-      "desc": { "fr": "Gel intime à base d'eau. 100 ml.", "en": "Water-based intimate gel. 100 ml." } }
+ "_note": "Catalogue de démonstration. Prix en euros. Sera remplacé par la base Supabase et géré depuis l'espace gérant.",
+ "categories": {
+  "lui": [
+   "miel",
+   "huile",
+   "bougie",
+   "gel"
+  ],
+  "elle": [
+   "miel",
+   "huile",
+   "bougie",
+   "soin"
   ]
+ },
+ "products": [
+  {
+   "id": "nuit-ambre",
+   "shop": "lui",
+   "category": "miel",
+   "name": "Nuit d'Ambre",
+   "price": 4.9,
+   "frame": "none",
+   "offer": true,
+   "pinned": true,
+   "sold": 184,
+   "stock": 120,
+   "img": "assets/img/coffret-24.webp",
+   "desc": {
+    "fr": "Un miel sombre aux reflets ambrés, en stick de 10 g à glisser partout.",
+    "en": "A dark, amber-toned honey in a 10 g stick you can take anywhere."
+   },
+   "tiers": [
+    {
+     "q": 1,
+     "p": 4.9
+    },
+    {
+     "q": 2,
+     "p": 9
+    },
+    {
+     "q": 3,
+     "p": 13
+    },
+    {
+     "q": 6,
+     "p": 25,
+     "label": "popular"
+    },
+    {
+     "q": 12,
+     "p": 40
+    },
+    {
+     "q": 24,
+     "p": 65.99
+    }
+   ],
+   "wholesale": {
+    "active": true,
+    "unit": {
+     "fr": "Boîte de 24 sticks",
+     "en": "Box of 24 sticks"
+    },
+    "min": 5,
+    "max": 50,
+    "tiers": [
+     {
+      "q": 5,
+      "p": 150
+     },
+     {
+      "q": 10,
+      "p": 290
+     },
+     {
+      "q": 25,
+      "p": 600
+     },
+     {
+      "q": 50,
+      "p": 1150
+     }
+    ],
+    "ref": true
+   },
+   "facts": {
+    "fr": [
+     "Stick de 10 g",
+     "Se glisse partout",
+     "Miel pur, sans additif"
+    ],
+    "en": [
+     "10 g stick",
+     "Slips in anywhere",
+     "Pure honey, no additives"
+    ]
+   },
+   "usage": {
+    "fr": "Ouvrez le stick d'un geste, savourez-le pur, à la cuillère ou dans une boisson tiède. Un moment à partager, sans cérémonie, quand l'envie vous prend.",
+    "en": "Tear the stick open and enjoy it on its own, on a spoon or in a warm drink. A moment to share, whenever the mood strikes."
+   },
+   "compo": {
+    "fr": "Miel (100 %). Origine : à préciser par le gérant.",
+    "en": "Honey (100%). Origin: to be specified."
+   },
+   "warn": {
+    "fr": "Ne convient pas aux enfants de moins de 1 an.\nDéconseillé en cas d'allergie aux produits de la ruche.\nDenrée alimentaire : ne remplace pas une alimentation variée et équilibrée.\nConserver à l'abri de la chaleur et de l'humidité.",
+    "en": "Not suitable for children under 1 year.\nNot recommended if allergic to bee products.\nFood product: not a substitute for a varied, balanced diet.\nStore away from heat and moisture."
+   },
+   "unitName": {
+    "fr": [
+     "stick",
+     "sticks"
+    ],
+    "en": [
+     "stick",
+     "sticks"
+    ],
+    "es": [
+     "stick",
+     "sticks"
+    ],
+    "pt": [
+     "stick",
+     "sticks"
+    ],
+    "de": [
+     "Stick",
+     "Sticks"
+    ],
+    "ar": [
+     "ستيك",
+     "ستيك"
+    ],
+    "ru": [
+     "стик",
+     "шт."
+    ],
+    "zh": [
+     "支",
+     "支"
+    ],
+    "ja": [
+     "本",
+     "本"
+    ],
+    "ko": [
+     "스틱",
+     "스틱"
+    ]
+   }
+  },
+  {
+   "id": "or-noir",
+   "shop": "lui",
+   "category": "miel",
+   "name": "Or Noir",
+   "price": 4.9,
+   "frame": "none",
+   "offer": true,
+   "sold": 142,
+   "stock": 90,
+   "img": null,
+   "desc": {
+    "fr": "Notes boisées et caramel brûlé. Stick de 10 g.",
+    "en": "Woody notes and burnt caramel. 10 g stick."
+   },
+   "tiers": [
+    {
+     "q": 1,
+     "p": 4.9
+    },
+    {
+     "q": 2,
+     "p": 9
+    },
+    {
+     "q": 3,
+     "p": 13
+    },
+    {
+     "q": 6,
+     "p": 25
+    },
+    {
+     "q": 12,
+     "p": 40
+    },
+    {
+     "q": 24,
+     "p": 65.99
+    }
+   ],
+   "wholesale": {
+    "active": true,
+    "unit": {
+     "fr": "Boîte de 24 sticks",
+     "en": "Box of 24 sticks"
+    },
+    "min": 5,
+    "max": 50,
+    "tiers": [
+     {
+      "q": 5,
+      "p": 150
+     },
+     {
+      "q": 10,
+      "p": 290
+     },
+     {
+      "q": 25,
+      "p": 600
+     },
+     {
+      "q": 50,
+      "p": 1150
+     }
+    ]
+   },
+   "facts": {
+    "fr": [
+     "Stick de 10 g",
+     "Se glisse partout",
+     "Miel pur, sans additif"
+    ],
+    "en": [
+     "10 g stick",
+     "Slips in anywhere",
+     "Pure honey, no additives"
+    ]
+   },
+   "usage": {
+    "fr": "Ouvrez le stick d'un geste, savourez-le pur, à la cuillère ou dans une boisson tiède. Un moment à partager, sans cérémonie, quand l'envie vous prend.",
+    "en": "Tear the stick open and enjoy it on its own, on a spoon or in a warm drink. A moment to share, whenever the mood strikes."
+   },
+   "compo": {
+    "fr": "Miel (100 %). Origine : à préciser par le gérant.",
+    "en": "Honey (100%). Origin: to be specified."
+   },
+   "warn": {
+    "fr": "Ne convient pas aux enfants de moins de 1 an.\nDéconseillé en cas d'allergie aux produits de la ruche.\nDenrée alimentaire : ne remplace pas une alimentation variée et équilibrée.\nConserver à l'abri de la chaleur et de l'humidité.",
+    "en": "Not suitable for children under 1 year.\nNot recommended if allergic to bee products.\nFood product: not a substitute for a varied, balanced diet.\nStore away from heat and moisture."
+   },
+   "unitName": {
+    "fr": [
+     "stick",
+     "sticks"
+    ],
+    "en": [
+     "stick",
+     "sticks"
+    ],
+    "es": [
+     "stick",
+     "sticks"
+    ],
+    "pt": [
+     "stick",
+     "sticks"
+    ],
+    "de": [
+     "Stick",
+     "Sticks"
+    ],
+    "ar": [
+     "ستيك",
+     "ستيك"
+    ],
+    "ru": [
+     "стик",
+     "шт."
+    ],
+    "zh": [
+     "支",
+     "支"
+    ],
+    "ja": [
+     "本",
+     "本"
+    ],
+    "ko": [
+     "스틱",
+     "스틱"
+    ]
+   }
+  },
+  {
+   "id": "cedre-ambre",
+   "shop": "lui",
+   "category": "huile",
+   "name": "Cèdre & Ambre",
+   "price": 19.9,
+   "frame": "new",
+   "offer": false,
+   "sold": 61,
+   "stock": 40,
+   "img": null,
+   "desc": {
+    "fr": "Huile de massage au parfum de cèdre et d'ambre. 100 ml.",
+    "en": "Massage oil scented with cedar and amber. 100 ml."
+   },
+   "warn": {
+    "fr": "Usage externe. Éviter le contact avec les yeux.\nFaire un essai sur une petite zone de peau avant la première utilisation.\nTenir hors de portée des enfants.",
+    "en": "External use. Avoid contact with eyes.\nPatch-test on a small area of skin before first use.\nKeep out of reach of children."
+   },
+   "wholesale": {
+    "active": true,
+    "base": 50,
+    "unit": {
+     "fr": "Carton de 6 flacons",
+     "en": "Case of 6 bottles"
+    },
+    "min": 1,
+    "max": 50,
+    "tiers": []
+   }
+  },
+  {
+   "id": "tabac-blond",
+   "shop": "lui",
+   "category": "bougie",
+   "name": "Tabac Blond",
+   "price": 24.9,
+   "frame": "none",
+   "offer": false,
+   "sold": 44,
+   "stock": 30,
+   "img": null,
+   "desc": {
+    "fr": "Bougie de massage : sa cire fondue devient une huile tiède.",
+    "en": "Massage candle: its melted wax turns into a warm oil."
+   },
+   "warn": {
+    "fr": "Ne jamais laisser une bougie allumée sans surveillance.\nÉteindre la flamme, attendre quelques instants et vérifier la température de la cire sur le poignet avant de l'appliquer.\nTenir hors de portée des enfants et des animaux.",
+    "en": "Never leave a burning candle unattended.\nBlow out the flame, wait a moment and test the wax temperature on your wrist before applying.\nKeep away from children and pets."
+   },
+   "wholesale": {
+    "active": true,
+    "base": 60,
+    "unit": {
+     "fr": "Carton de 6 bougies",
+     "en": "Case of 6 candles"
+    },
+    "min": 1,
+    "max": 50,
+    "tiers": []
+   }
+  },
+  {
+   "id": "tempo",
+   "shop": "lui",
+   "category": "gel",
+   "name": "Tempo",
+   "price": 14.9,
+   "frame": "none",
+   "offer": false,
+   "sold": 58,
+   "stock": 7,
+   "img": null,
+   "desc": {
+    "fr": "Gel retardant. 15 ml.",
+    "en": "Delay gel. 15 ml."
+   },
+   "warn": {
+    "fr": "Usage externe uniquement. Lire attentivement la notice avant utilisation.\nNe pas appliquer sur une peau irritée ou lésée.\nEn cas d'irritation, cesser l'utilisation et consulter un médecin ou un pharmacien.\nTenir hors de portée des enfants.",
+    "en": "For external use only. Read the leaflet carefully before use.\nDo not apply to irritated or broken skin.\nIf irritation occurs, stop use and consult a doctor or pharmacist.\nKeep out of reach of children."
+   },
+   "wholesale": {
+    "active": true,
+    "base": 45,
+    "unit": {
+     "fr": "Carton de 6 gels",
+     "en": "Case of 6 gels"
+    },
+    "min": 1,
+    "max": 50,
+    "tiers": []
+   }
+  },
+  {
+   "id": "tempo-intense",
+   "shop": "lui",
+   "category": "gel",
+   "name": "Tempo Intense",
+   "price": 17.9,
+   "frame": "none",
+   "offer": false,
+   "sold": 23,
+   "stock": 25,
+   "img": null,
+   "warn": {
+    "fr": "Usage externe uniquement. Lire attentivement la notice avant utilisation.\nNe pas appliquer sur une peau irritée ou lésée.\nEn cas d'irritation, cesser l'utilisation et consulter un médecin ou un pharmacien.\nTenir hors de portée des enfants.",
+    "en": "For external use only. Read the leaflet carefully before use.\nDo not apply to irritated or broken skin.\nIf irritation occurs, stop use and consult a doctor or pharmacist.\nKeep out of reach of children."
+   }
+  },
+  {
+   "id": "rose-minuit",
+   "shop": "elle",
+   "category": "miel",
+   "name": "Rose de Minuit",
+   "price": 4.9,
+   "frame": "fav",
+   "offer": true,
+   "pinned": true,
+   "sold": 167,
+   "stock": 110,
+   "img": null,
+   "desc": {
+    "fr": "Un miel clair aux notes de rose. Stick de 10 g.",
+    "en": "A light honey with notes of rose. 10 g stick."
+   },
+   "tiers": [
+    {
+     "q": 1,
+     "p": 4.9
+    },
+    {
+     "q": 2,
+     "p": 9
+    },
+    {
+     "q": 3,
+     "p": 13
+    },
+    {
+     "q": 6,
+     "p": 25
+    },
+    {
+     "q": 12,
+     "p": 40
+    },
+    {
+     "q": 24,
+     "p": 65.99
+    }
+   ],
+   "wholesale": {
+    "active": true,
+    "unit": {
+     "fr": "Boîte de 24 sticks",
+     "en": "Box of 24 sticks"
+    },
+    "min": 5,
+    "max": 50,
+    "tiers": [
+     {
+      "q": 5,
+      "p": 150
+     },
+     {
+      "q": 10,
+      "p": 290
+     },
+     {
+      "q": 25,
+      "p": 600
+     },
+     {
+      "q": 50,
+      "p": 1150
+     }
+    ]
+   },
+   "facts": {
+    "fr": [
+     "Stick de 10 g",
+     "Se glisse partout",
+     "Miel pur, sans additif"
+    ],
+    "en": [
+     "10 g stick",
+     "Slips in anywhere",
+     "Pure honey, no additives"
+    ]
+   },
+   "usage": {
+    "fr": "Ouvrez le stick d'un geste, savourez-le pur, à la cuillère ou dans une boisson tiède. Un moment à partager, sans cérémonie, quand l'envie vous prend.",
+    "en": "Tear the stick open and enjoy it on its own, on a spoon or in a warm drink. A moment to share, whenever the mood strikes."
+   },
+   "compo": {
+    "fr": "Miel (100 %). Origine : à préciser par le gérant.",
+    "en": "Honey (100%). Origin: to be specified."
+   },
+   "warn": {
+    "fr": "Ne convient pas aux enfants de moins de 1 an.\nDéconseillé en cas d'allergie aux produits de la ruche.\nDenrée alimentaire : ne remplace pas une alimentation variée et équilibrée.\nConserver à l'abri de la chaleur et de l'humidité.",
+    "en": "Not suitable for children under 1 year.\nNot recommended if allergic to bee products.\nFood product: not a substitute for a varied, balanced diet.\nStore away from heat and moisture."
+   },
+   "unitName": {
+    "fr": [
+     "stick",
+     "sticks"
+    ],
+    "en": [
+     "stick",
+     "sticks"
+    ],
+    "es": [
+     "stick",
+     "sticks"
+    ],
+    "pt": [
+     "stick",
+     "sticks"
+    ],
+    "de": [
+     "Stick",
+     "Sticks"
+    ],
+    "ar": [
+     "ستيك",
+     "ستيك"
+    ],
+    "ru": [
+     "стик",
+     "шт."
+    ],
+    "zh": [
+     "支",
+     "支"
+    ],
+    "ja": [
+     "本",
+     "本"
+    ],
+    "ko": [
+     "스틱",
+     "스틱"
+    ]
+   }
+  },
+  {
+   "id": "fleur-oranger",
+   "shop": "elle",
+   "category": "miel",
+   "name": "Fleur d'Oranger",
+   "price": 4.9,
+   "frame": "none",
+   "offer": true,
+   "sold": 96,
+   "stock": 80,
+   "img": null,
+   "tiers": [
+    {
+     "q": 1,
+     "p": 4.9
+    },
+    {
+     "q": 2,
+     "p": 9
+    },
+    {
+     "q": 3,
+     "p": 13
+    },
+    {
+     "q": 6,
+     "p": 25
+    },
+    {
+     "q": 12,
+     "p": 40
+    },
+    {
+     "q": 24,
+     "p": 65.99
+    }
+   ],
+   "wholesale": {
+    "active": true,
+    "unit": {
+     "fr": "Boîte de 24 sticks",
+     "en": "Box of 24 sticks"
+    },
+    "min": 5,
+    "max": 50,
+    "tiers": [
+     {
+      "q": 5,
+      "p": 150
+     },
+     {
+      "q": 10,
+      "p": 290
+     },
+     {
+      "q": 25,
+      "p": 600
+     },
+     {
+      "q": 50,
+      "p": 1150
+     }
+    ]
+   },
+   "facts": {
+    "fr": [
+     "Stick de 10 g",
+     "Se glisse partout",
+     "Miel pur, sans additif"
+    ],
+    "en": [
+     "10 g stick",
+     "Slips in anywhere",
+     "Pure honey, no additives"
+    ]
+   },
+   "usage": {
+    "fr": "Ouvrez le stick d'un geste, savourez-le pur, à la cuillère ou dans une boisson tiède. Un moment à partager, sans cérémonie, quand l'envie vous prend.",
+    "en": "Tear the stick open and enjoy it on its own, on a spoon or in a warm drink. A moment to share, whenever the mood strikes."
+   },
+   "compo": {
+    "fr": "Miel (100 %). Origine : à préciser par le gérant.",
+    "en": "Honey (100%). Origin: to be specified."
+   },
+   "warn": {
+    "fr": "Ne convient pas aux enfants de moins de 1 an.\nDéconseillé en cas d'allergie aux produits de la ruche.\nDenrée alimentaire : ne remplace pas une alimentation variée et équilibrée.\nConserver à l'abri de la chaleur et de l'humidité.",
+    "en": "Not suitable for children under 1 year.\nNot recommended if allergic to bee products.\nFood product: not a substitute for a varied, balanced diet.\nStore away from heat and moisture."
+   },
+   "unitName": {
+    "fr": [
+     "stick",
+     "sticks"
+    ],
+    "en": [
+     "stick",
+     "sticks"
+    ],
+    "es": [
+     "stick",
+     "sticks"
+    ],
+    "pt": [
+     "stick",
+     "sticks"
+    ],
+    "de": [
+     "Stick",
+     "Sticks"
+    ],
+    "ar": [
+     "ستيك",
+     "ستيك"
+    ],
+    "ru": [
+     "стик",
+     "шт."
+    ],
+    "zh": [
+     "支",
+     "支"
+    ],
+    "ja": [
+     "本",
+     "本"
+    ],
+    "ko": [
+     "스틱",
+     "스틱"
+    ]
+   }
+  },
+  {
+   "id": "satin",
+   "shop": "elle",
+   "category": "huile",
+   "name": "Satin",
+   "price": 21.9,
+   "frame": "none",
+   "offer": false,
+   "sold": 52,
+   "stock": 35,
+   "img": null,
+   "desc": {
+    "fr": "Huile sèche pour le corps, fini satiné. 100 ml.",
+    "en": "Dry body oil with a satin finish. 100 ml."
+   },
+   "warn": {
+    "fr": "Usage externe. Éviter le contact avec les yeux.\nFaire un essai sur une petite zone de peau avant la première utilisation.\nTenir hors de portée des enfants.",
+    "en": "External use. Avoid contact with eyes.\nPatch-test on a small area of skin before first use.\nKeep out of reach of children."
+   },
+   "wholesale": {
+    "active": true,
+    "base": 50,
+    "unit": {
+     "fr": "Carton de 6 flacons",
+     "en": "Case of 6 bottles"
+    },
+    "min": 1,
+    "max": 50,
+    "tiers": []
+   }
+  },
+  {
+   "id": "pivoine-vanille",
+   "shop": "elle",
+   "category": "bougie",
+   "name": "Pivoine & Vanille",
+   "price": 24.9,
+   "frame": "new",
+   "offer": false,
+   "sold": 37,
+   "stock": 30,
+   "img": null,
+   "warn": {
+    "fr": "Ne jamais laisser une bougie allumée sans surveillance.\nÉteindre la flamme, attendre quelques instants et vérifier la température de la cire sur le poignet avant de l'appliquer.\nTenir hors de portée des enfants et des animaux.",
+    "en": "Never leave a burning candle unattended.\nBlow out the flame, wait a moment and test the wax temperature on your wrist before applying.\nKeep away from children and pets."
+   },
+   "wholesale": {
+    "active": true,
+    "base": 60,
+    "unit": {
+     "fr": "Carton de 6 bougies",
+     "en": "Case of 6 candles"
+    },
+    "min": 1,
+    "max": 50,
+    "tiers": []
+   }
+  },
+  {
+   "id": "soie",
+   "shop": "elle",
+   "category": "soin",
+   "name": "Soie",
+   "price": 12.9,
+   "frame": "none",
+   "offer": false,
+   "sold": 57,
+   "stock": 50,
+   "img": null,
+   "desc": {
+    "fr": "Gel intime à base d'eau. 100 ml.",
+    "en": "Water-based intimate gel. 100 ml."
+   },
+   "warn": {
+    "fr": "Usage externe uniquement. Lire attentivement la notice avant utilisation.\nNe pas appliquer sur une peau irritée ou lésée.\nEn cas d'irritation, cesser l'utilisation et consulter un médecin ou un pharmacien.\nTenir hors de portée des enfants.",
+    "en": "For external use only. Read the leaflet carefully before use.\nDo not apply to irritated or broken skin.\nIf irritation occurs, stop use and consult a doctor or pharmacist.\nKeep out of reach of children."
+   },
+   "wholesale": {
+    "active": true,
+    "base": 40,
+    "unit": {
+     "fr": "Carton de 6 flacons",
+     "en": "Case of 6 bottles"
+    },
+    "min": 1,
+    "max": 50,
+    "tiers": []
+   }
+  }
+ ]
 }

@@ -4,7 +4,8 @@ import { signIn, signUp, signOut, currentUser, myOrders, updateUser, recover, up
 import { countryFromIp } from "../core/geo.js";
 import { mountChrome } from "../ui/chrome.js";
 import { esc } from "../core/util.js";
-import { ORN } from "../ui/card.js";
+import { ORN, ornament } from "../ui/card.js";
+import { submitReview } from "../core/shop.js";
 
 const app = document.getElementById("app");
 let tab = "login";
@@ -22,6 +23,7 @@ async function render() {
       <div class="ac-box">
         <div class="seal mx-auto" style="width:96px"><img src="assets/img/logo.webp" alt=""></div>
         <h1 class="display text-center text-4xl italic text-gold-hi" data-i="account"></h1>
+        ${ornament("mx-auto")}
         <p class="text-center text-muted" data-i="ac_why"></p>
         <div class="ac-tabs" role="tablist">
           <button type="button" role="tab" data-tab="login" aria-selected="${tab === "login"}" data-i="ac_login"></button>
@@ -52,6 +54,7 @@ async function render() {
   <section class="wrap py-14">
     <p class="eyebrow m-0">${ORN}<span data-i="account"></span></p>
     <h1 class="display mt-3 text-[clamp(2.4rem,6vw,3.6rem)] italic leading-none text-gold-hi">${esc(t("ac_hello", { name: u.firstName || "" }))}</h1>
+    ${ornament("my-3")}
     <p class="text-muted">${esc(u.email)}</p>
     ${notice ? `<p class="ac-ok mt-4" role="status" data-i="${notice}"></p>` : ""}
     <div class="ac-grid">
@@ -60,7 +63,8 @@ async function render() {
         ${orders.length ? `<ul class="ac-orders">${orders.map((o) => `<li>
           <div><b>${esc(o.id)}</b><small>${new Date(o.at).toLocaleDateString(currentLang(), { dateStyle: "medium" })} · ${o.lines.reduce((s, l) => s + l.qty, 0)} ×</small></div>
           <span class="ac-st st-${o.status}" data-i="ac_status_${o.status}"></span>
-          <b class="ac-tot">${esc(o.display?.total || "")}</b></li>`).join("")}</ul>` : `<p class="text-muted" data-i="ac_no_orders"></p>`}
+          <b class="ac-tot">${esc(o.display?.total || "")}</b>
+          ${o.status === "livree" ? `<button type="button" class="ac-rev" data-review="${esc(o.id)}" data-product="${esc(o.lines[0]?.id || "")}">★ ${esc(t("rev_leave"))}</button>` : ""}</li>`).join("")}</ul>` : `<p class="text-muted" data-i="ac_no_orders"></p>`}
       </section>
       <section class="ac-card">
         <h2 class="display" data-i="ac_offers"></h2>
@@ -73,7 +77,30 @@ async function render() {
   translateDom(app);
   notice = "";
   document.getElementById("logout").onclick = () => { signOut(); tab = "login"; render(); };
+  app.querySelectorAll("[data-review]").forEach((b) => (b.onclick = () => reviewForm(b, u)));
   document.getElementById("optinMe").onchange = async (e) => { try { await updateUser({ optin: e.target.checked }); } catch { e.target.checked = !e.target.checked; } };
+}
+
+/* Avis vérifié sur une commande livrée */
+function reviewForm(btn, u) {
+  const li = btn.closest("li");
+  if (li.querySelector(".rv-form")) return;
+  const f = document.createElement("form");
+  f.className = "rv-form";
+  f.innerHTML = `<div class="rv-stars" role="radiogroup">${[5, 4, 3, 2, 1].map((n) => `<label><input type="radio" name="r" value="${n}" ${n === 5 ? "checked" : ""}><span>★</span></label>`).join("")}</div>
+    <textarea class="co-in" name="body" rows="3" maxlength="600" required placeholder="${esc(t("rev_ph"))}"></textarea>
+    <input class="co-in" name="name" maxlength="40" value="${esc(u.firstName || "")}" placeholder="${esc(t("rev_name"))}">
+    <button class="btn btn-gold" type="submit">${esc(t("rev_send"))}</button>`;
+  li.append(f);
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(f);
+    if (String(fd.get("body")).trim().length < 3) return;
+    try {
+      await submitReview({ order: btn.dataset.review, product: btn.dataset.product, rating: Number(fd.get("r")), body: String(fd.get("body")), name: String(fd.get("name")), lang: currentLang() });
+      f.outerHTML = `<p class="ac-ok">${esc(t("rev_thanks"))}</p>`; btn.remove();
+    } catch { f.querySelector("button").textContent = "×"; }
+  };
 }
 
 /* Mot de passe oublié : on envoie un lien par e-mail */
@@ -114,7 +141,7 @@ async function submit(e) {
   try {
     if (tab === "signup") await signUp({ email: v("email"), password: v("password"), firstName: v("firstName"), optin: document.getElementById("optin")?.checked, lang: currentLang(), country: await countryFromIp() });
     else await signIn({ email: v("email"), password: v("password") });
-    if (next === "commande") { location.href = "commande.html"; return; }
+    if (next === "commande" || next === "partenaire") { location.href = next + ".html"; return; }
     render();
   } catch (x) {
     if (x.message === "confirm") { notice = "ac_check_email"; tab = "login"; render(); return; }

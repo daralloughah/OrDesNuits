@@ -2,6 +2,7 @@
    Analyses du Salon privé : chiffres, classements, comptabilité,
    et pistes stratégiques calculées à partir des commandes.
    ========================================================= */
+import { OFFER } from "../config.js";
 import { allOrders, customers, subscribers } from "../core/backend.js";
 import { countryName, FR_REGIONS } from "../core/places.js";
 
@@ -117,7 +118,7 @@ export function insights(s, products) {
   const maxDay = s.byDay.indexOf(Math.max(...s.byDay));
   const maxHour = s.byHour.indexOf(Math.max(...s.byHour));
   if (s.orders.length >= 8) out.push({ tone: "idee", text: `Tes clients commandent surtout le ${DAYS[maxDay]}, vers ${maxHour} h. Programme tes stories une heure avant pour arriver au bon moment.` });
-  if (s.honeyOrders >= 5) {
+  if (OFFER.active && s.honeyOrders >= 5) {
     const r = pct(s.offerUsed, s.honeyOrders);
     out.push(r >= 30
       ? { tone: "bien", text: `L'offre 3+1 fonctionne : ${r} % des commandes de miel en profitent. Garde-la, c'est ton meilleur levier.` }
