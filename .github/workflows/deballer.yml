@@ -1,0 +1,40 @@
+name: Déballer le zip
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+jobs:
+  deballer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Déballer
+        id: z
+        run: |
+          shopt -s nullglob
+          zips=(*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then echo "Aucun zip à déballer."; echo "done=0" >> "$GITHUB_OUTPUT"; exit 0; fi
+          for z in "${zips[@]}"; do
+            echo "Déballage de $z"
+            unzip -o -q "$z" -d .
+            git rm -q --cached "$z" || true
+            rm -f "$z"
+          done
+          echo "done=1" >> "$GITHUB_OUTPUT"
+      - name: Enregistrer
+        if: steps.z.outputs.done == '1'
+        run: |
+          git config user.name "OrDesNuits"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Mise à jour du site depuis le zip"
+          git push
+      - name: Relancer la publication du site
+        if: steps.z.outputs.done == '1'
+        continue-on-error: true
+        run: |
+          curl -s -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/pages/builds
